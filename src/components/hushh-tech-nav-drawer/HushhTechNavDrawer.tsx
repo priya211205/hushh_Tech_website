@@ -128,7 +128,7 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
               hushh technologies
             </span>
           </div>
-          <button ref={closeButtonRef} onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <button ref={closeButtonRef} onClick={onClose} aria-label="Close menu" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
             <span className="material-symbols-outlined text-gray-500">close</span>
           </button>
         </div>
