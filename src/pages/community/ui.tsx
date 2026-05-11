@@ -7,9 +7,8 @@
 import { Link } from "react-router-dom";
 import { useCommunityListLogic } from "./logic";
 import HushhTechBackHeader from "../../components/hushh-tech-back-header/HushhTechBackHeader";
-import HushhTechFooter, {
-  HushhFooterTab,
-} from "../../components/hushh-tech-footer/HushhTechFooter";
+import HushhTechFooter from "../../components/hushh-tech-footer/HushhTechFooter";
+import { HushhFooterTab } from "../../components/hushh-tech-footer/types";
 import NDARequestModal from "../../components/NDARequestModal";
 import NDADocumentModal from "../../components/NDADocumentModal";
 
