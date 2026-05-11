@@ -142,7 +142,7 @@ export function useStep9Logic() {
     if (!value) return null;
     const parts = value.split('/');
     if (parts.length === 3) {
-      let [p1, p2, year] = parts.map((p) => p.trim());
+      const [p1, p2, year] = parts.map((p) => p.trim());
       let month = p1, day = p2;
       if (parseInt(p1, 10) > 12) { day = p1; month = p2; }
       const iso = `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;

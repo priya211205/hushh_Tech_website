@@ -97,7 +97,7 @@ export const formatReceiptDate = (date: Date): string => {
  */
 export const parseAmount = (amountStr: string): number => {
   // Remove currency symbols and spaces
-  let cleaned = amountStr.replace(/[₹Rs\s,]/gi, '').trim();
+  const cleaned = amountStr.replace(/[₹Rs\s,]/gi, '').trim();
   
   // Handle K/L/Cr suffixes
   const multipliers: Record<string, number> = {

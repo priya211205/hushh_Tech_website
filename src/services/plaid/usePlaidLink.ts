@@ -376,7 +376,7 @@ export const usePlaidLinkHook = (userId: string, userEmail?: string): UsePlaidLi
         setDbRestoreComplete(true);
       }
     })();
-  }, [userId, state.step, state.financialData]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, state.step, state.financialData]);  
 
   // Auto-init — only if we don't already have a valid state
   // IMPORTANT: Wait for DB restore to complete first
