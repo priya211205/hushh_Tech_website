@@ -4,7 +4,6 @@ import { MotionConfig } from 'framer-motion'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
 import './index.css'
-import config from './resources/config/config.ts'
 
 // Initialize i18n for multi-language support
 import './i18n'
