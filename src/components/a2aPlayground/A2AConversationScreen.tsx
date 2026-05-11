@@ -1,14 +1,12 @@
 /**
  * A2A Conversation Screen (Screen 2)
- * 
- * The HERO screen showing Bank KYC Copilot and Hushh KYC Agent
+ * * The HERO screen showing Bank KYC Copilot and Hushh KYC Agent
  * talking to each other in real-time.
- * 
- * Now uses the Mission Control 3-pane layout for a "class product" feel.
+ * * Now uses the Mission Control 3-pane layout for a "class product" feel.
  */
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -22,37 +20,14 @@ import {
   Flex,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import { keyframes } from '@emotion/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   A2AConversationProps,
   ConversationMessage,
-  AgentActor,
 } from '../../types/a2aPlayground';
 import { MissionControlLayout } from './MissionControlLayout';
 import { AgentThoughtLog, ThoughtIndicator } from './AgentThoughtLog';
-import { TrustGauge, TrustIndicator } from './TrustGauge';
-import { DataVaultCard, DataVaultProgress } from './DataVaultCard';
-
-// =====================================================
-// Animations
-// =====================================================
-
-const flowDots = keyframes`
-  0% { transform: translateX(-20px); opacity: 0; }
-  50% { opacity: 1; }
-  100% { transform: translateX(20px); opacity: 0; }
-`;
-
-const fadeInUp = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const pulse = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-`;
+import { TrustIndicator } from './TrustGauge';
 
 // =====================================================
 // Risk Band Type
@@ -62,22 +37,15 @@ type RiskBand = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 // =====================================================
 // Helper: Extract trust score from messages
 // =====================================================
-const extractTrustScore = (messages: ConversationMessage[], result: A2AConversationProps['result']): number => {
-  // First check result
+const extractTrustScore = (_messages: ConversationMessage[], result: A2AConversationProps['result']): number => {
+  // Return actual trust score if available from the result
   if (result?.kycDecision?.verifiedVia?.trustScore !== undefined) {
     return result.kycDecision.verifiedVia.trustScore;
   }
-  
-  // Calculate based on message progress
-  const progressMessages = messages.filter(m => m.progressPercent !== undefined);
-  if (progressMessages.length > 0) {
-    const lastProgress = progressMessages[progressMessages.length - 1];
-    return (lastProgress.progressPercent || 0) / 100;
-  }
-  
-  // Calculate based on conversation progress
-  const totalExpectedMessages = 10;
-  return Math.min(messages.length / totalExpectedMessages, 1);
+
+  // Do not conflate task progress with trust score. 
+  // Return a baseline neutral score (0) until calculation is complete.
+  return 0;
 };
 
 // =====================================================
@@ -95,7 +63,7 @@ const calculateRiskBand = (trustScore: number): RiskBand => {
 // =====================================================
 const generateThoughts = (messages: ConversationMessage[]): string[] => {
   const thoughts: string[] = [];
-  
+
   messages.forEach((msg) => {
     if (msg.actor === 'HUSHH_AGENT') {
       if (msg.stage === 'CHECKING') {
@@ -111,13 +79,13 @@ const generateThoughts = (messages: ConversationMessage[]): string[] => {
       }
     }
   });
-  
+
   // Add default thoughts if empty
   if (thoughts.length === 0 && messages.length > 0) {
     thoughts.push('🚀 Initializing A2A protocol...');
     thoughts.push('📡 Establishing secure connection...');
   }
-  
+
   return thoughts.slice(-5); // Keep last 5 thoughts
 };
 
@@ -146,7 +114,7 @@ const generateDataFields = (messages: ConversationMessage[], result: A2AConversa
     { name: 'ssn', label: 'SSN (Last 4)', value: null, status: 'protected', isSensitive: true },
     { name: 'kyc_status', label: 'KYC Status', value: null, status: 'locked', isSensitive: false },
   ];
-  
+
   // Check if we have result data from exportResult
   if (result?.exportResult?.profile) {
     const profile = result.exportResult.profile;
@@ -172,12 +140,12 @@ const generateDataFields = (messages: ConversationMessage[], result: A2AConversa
       }
     }
   }
-  
-  // Update status based on conversation stage (using correct stage names)
+
+  // Update status based on conversation stage
   const hasExportComplete = messages.some(m => m.stage === 'EXPORT_COMPLETE');
   const hasAttestationFound = messages.some(m => m.stage === 'ATTESTATION_FOUND');
   const hasKeyVerify = messages.some(m => m.stage === 'KEY_VERIFY_REQUEST' || m.stage === 'KEY_VERIFY_RESULT');
-  
+
   if (hasExportComplete) {
     fields.forEach(f => {
       if (f.status === 'locked' && !f.isSensitive) {
@@ -202,73 +170,12 @@ const generateDataFields = (messages: ConversationMessage[], result: A2AConversa
       }
     });
   }
-  
+
   return fields;
 };
 
 // =====================================================
-// Agent Card Component (for simplified mode)
-// =====================================================
-
-interface AgentCardProps {
-  type: 'BANK' | 'HUSHH';
-  name: string;
-  subtitle: string;
-  isActive?: boolean;
-}
-
-const AgentCard: React.FC<AgentCardProps> = ({ type, name, subtitle, isActive }) => {
-  const isBank = type === 'BANK';
-  
-  return (
-    <Box
-      bg="white"
-      border="1px solid"
-      borderColor={isActive ? 'black' : 'gray.300'}
-      borderRadius="lg"
-      p={{ base: 3, md: 4 }}
-      minW={{ base: '120px', md: '180px' }}
-      textAlign="center"
-      transition="all 0.2s"
-      boxShadow={isActive ? 'md' : 'sm'}
-    >
-      {/* Logo or Bank Name */}
-      {isBank ? (
-        <Text color="black" fontSize={{ base: 'sm', md: 'md' }} fontWeight="600" mb={1}>
-          {name}
-        </Text>
-      ) : (
-        <Box mb={2}>
-          <img 
-            src="/assets/Hushhogo-tDRfOnun.png" 
-            alt="Hushh Logo" 
-            style={{ 
-              height: '24px', 
-              width: 'auto', 
-              margin: '0 auto',
-              display: 'block'
-            }} 
-          />
-        </Box>
-      )}
-      
-      <Text color="gray.600" fontSize={{ base: '2xs', md: 'xs' }}>
-        {subtitle}
-      </Text>
-      
-      {isActive && (
-        <Box mt={2} pt={2} borderTop="1px solid" borderColor="gray.200">
-          <Text fontSize="2xs" color="gray.500" fontWeight="500">
-            Active
-          </Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// =====================================================
-// Message Bubble Component
+// Message Bubble Component (Framer Motion Refactor)
 // =====================================================
 
 interface MessageBubbleProps {
@@ -278,16 +185,19 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, bankName }) => {
   const isBank = message.actor === 'BANK_AGENT';
-  
+
   return (
     <Box
-      animation={`${fadeInUp} 0.4s ease-out`}
+      as={motion.div}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut" } as any}
       alignSelf={isBank ? 'flex-start' : 'flex-end'}
       maxW={{ base: '85%', md: '75%' }}
       w="auto"
     >
       {/* Agent label */}
-      <Text 
+      <Text
         fontSize={{ base: '2xs', md: 'xs' }}
         color="gray.600"
         fontWeight="500"
@@ -296,7 +206,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, bankName }) => {
       >
         {isBank ? bankName : 'Hushh'}
       </Text>
-      
+
       {/* Message bubble */}
       <Box
         bg={isBank ? 'gray.100' : 'gray.50'}
@@ -309,7 +219,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, bankName }) => {
         <Text color="black" fontSize={{ base: 'xs', md: 'sm' }} lineHeight="1.6">
           {message.message}
         </Text>
-        
+
         {/* Progress indicator for progress messages */}
         {message.isProgress && message.progressPercent !== undefined && (
           <Box mt={3}>
@@ -326,11 +236,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, bankName }) => {
           </Box>
         )}
       </Box>
-      
+
       {/* Timestamp */}
-      <Text 
+      <Text
         fontSize="2xs"
-        color="gray.500" 
+        color="gray.500"
         mt={1}
         textAlign={isBank ? 'left' : 'right'}
         display={{ base: 'none', sm: 'block' }}
@@ -345,7 +255,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, bankName }) => {
 // Main Component - Mission Control Layout
 // =====================================================
 
-export const A2AConversationScreen: React.FC<A2AConversationProps> = ({
+const A2AConversationScreen: React.FC<A2AConversationProps> = ({
   config,
   messages,
   isRunning,
@@ -354,13 +264,13 @@ export const A2AConversationScreen: React.FC<A2AConversationProps> = ({
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useBreakpointValue({ base: true, lg: false });
-  
+
   // Calculate derived state
   const trustScore = useMemo(() => extractTrustScore(messages, result), [messages, result]);
   const riskBand = useMemo(() => calculateRiskBand(trustScore), [trustScore]);
   const thoughts = useMemo(() => generateThoughts(messages), [messages]);
   const dataFields = useMemo(() => generateDataFields(messages, result), [messages, result]);
-  
+
   // Decision summary based on result
   const decisionSummary = useMemo(() => {
     if (!result) return undefined;
@@ -372,24 +282,18 @@ export const A2AConversationScreen: React.FC<A2AConversationProps> = ({
       return `Verification incomplete. Additional information needed.`;
     }
   }, [result, trustScore]);
-  
-  // Determine which agent is currently active
-  const activeAgent = isRunning && messages.length > 0 
-    ? messages[messages.length - 1].actor 
-    : null;
-  
-  // Scroll to top when component first mounts (screen transition)
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
-  // Auto-scroll to latest message
+  // Determine which agent is currently active
+  const activeAgent = isRunning && messages.length > 0
+    ? messages[messages.length - 1].actor
+    : null;
+
+  // Auto-scroll to latest message efficiently via requestAnimationFrame
   useEffect(() => {
     if (messages.length > 0) {
-      const timer = setTimeout(() => {
+      requestAnimationFrame(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100);
-      return () => clearTimeout(timer);
+      });
     }
   }, [messages.length]);
 
@@ -417,13 +321,13 @@ export const A2AConversationScreen: React.FC<A2AConversationProps> = ({
       agents={{
         requester: {
           name: config.relyingParty.name,
-          status: activeAgent === 'BANK_AGENT' ? 'negotiating' : 
-                  isRunning ? 'connected' : 'idle',
+          status: activeAgent === 'BANK_AGENT' ? 'negotiating' :
+            isRunning ? 'connected' : 'idle',
         },
         oracle: {
           name: 'Hushh KYC Agent',
-          status: activeAgent === 'HUSHH_AGENT' ? 'processing' : 
-                  isRunning ? 'connected' : 'idle',
+          status: activeAgent === 'HUSHH_AGENT' ? 'processing' :
+            isRunning ? 'connected' : 'idle',
         },
       }}
       messages={messages}
@@ -459,9 +363,9 @@ export const A2AConversationScreen: React.FC<A2AConversationProps> = ({
         ) : (
           <HStack justify="space-between">
             <HStack spacing={2}>
-              <ThoughtIndicator 
-                text={isRunning ? 'Processing...' : 'Ready'} 
-                isActive={isRunning} 
+              <ThoughtIndicator
+                text={isRunning ? 'Processing...' : 'Ready'}
+                isActive={isRunning}
               />
               <Text color="gray.400" fontSize="sm">
                 {isRunning ? 'Agents communicating...' : 'Waiting for task...'}
@@ -498,8 +402,8 @@ const SimplifiedLayout: React.FC<SimplifiedLayoutProps> = ({
   thoughts,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const activeAgent = isRunning && messages.length > 0 
-    ? messages[messages.length - 1].actor 
+  const activeAgent = isRunning && messages.length > 0
+    ? messages[messages.length - 1].actor
     : null;
 
   return (
@@ -517,9 +421,9 @@ const SimplifiedLayout: React.FC<SimplifiedLayoutProps> = ({
               Trust: {(trustScore * 100).toFixed(0)}%
             </Text>
             <Badge colorScheme={
-              riskBand === 'LOW' ? 'green' : 
-              riskBand === 'MEDIUM' ? 'yellow' : 
-              riskBand === 'HIGH' ? 'orange' : 'red'
+              riskBand === 'LOW' ? 'green' :
+                riskBand === 'MEDIUM' ? 'yellow' :
+                  riskBand === 'HIGH' ? 'orange' : 'red'
             }>
               {riskBand} RISK
             </Badge>
@@ -530,9 +434,9 @@ const SimplifiedLayout: React.FC<SimplifiedLayoutProps> = ({
         </VStack>
 
         {/* Agent Strip */}
-        <Flex 
-          justify="center" 
-          align="center" 
+        <Flex
+          justify="center"
+          align="center"
           gap={2}
           py={3}
           px={3}
