@@ -1,13 +1,3 @@
-/**
- * HushhTechFooter — Reusable bottom navigation bar
- * Floating dark rounded bar with 4 nav tabs.
- *
- * Usage:
- *   <HushhTechFooter
- *     activeTab={HushhFooterTab.HOME}
- *     onTabChange={(tab) => navigate(tab)}
- *   />
- */
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuthSession } from "../../auth/AuthSessionProvider";
@@ -25,15 +15,11 @@ export enum HushhFooterTab {
 }
 
 interface HushhTechFooterProps {
-  /** Currently active tab */
   activeTab?: HushhFooterTab;
-  /** Callback when a tab is tapped */
   onTabChange?: (tab: HushhFooterTab) => void;
-  /** Extra classes on root container */
   className?: string;
 }
 
-/** Static tab configuration */
 const STATIC_TABS = [
   { id: HushhFooterTab.HOME, icon: "home", label: "Home" },
   { id: HushhFooterTab.FUND_A, icon: null, label: "Fund A" },
@@ -47,22 +33,19 @@ type FooterTabConfig = {
   path: string;
 };
 
-/** Fund A has a custom icon (circle with line) */
 const FundAIcon: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   return (
     <div
-      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-        isActive
-          ? "border-white"
-          : "border-gray-400 group-hover:border-white"
-      }`}
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isActive
+        ? "border-white"
+        : "border-gray-400 group-hover:border-white"
+        }`}
     >
       <div
-        className={`w-[1px] h-2 transition-colors ${
-          isActive
-            ? "bg-white"
-            : "bg-gray-400 group-hover:bg-white"
-        }`}
+        className={`w-[1px] h-2 transition-colors ${isActive
+          ? "bg-white"
+          : "bg-gray-400 group-hover:bg-white"
+          }`}
       />
     </div>
   );
@@ -98,11 +81,9 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
       ? HushhFooterTab.PROFILE
       : undefined);
 
-  /** Handle tab click — use parent callback if provided, else navigate */
   const handleTabClick = (tab: FooterTabConfig) => {
     if (onTabChange) {
       onTabChange(tab.id);
-      return;
     } else {
       navigate(tab.path);
     }
@@ -111,7 +92,6 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
   const renderTab = (tab: FooterTabConfig) => {
     const isActive = resolvedActiveTab === tab.id;
 
-    // Text color: active = white, inactive = gray with hover
     const textColor = isActive
       ? "text-white"
       : "text-gray-500 group-hover:text-gray-300";
@@ -124,8 +104,10 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
       <button
         key={tab.id}
         onClick={() => handleTabClick(tab)}
-        className="flex flex-col items-center gap-1 group cursor-pointer bg-transparent border-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded-lg"
+        // FIX: Accessibility improvement with better focus and title
+        className="flex flex-col items-center gap-1 group cursor-pointer bg-transparent border-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded-lg px-1"
         aria-label={tab.label}
+        title={tab.label}
         aria-current={isActive ? "page" : undefined}
         tabIndex={0}
       >
@@ -139,7 +121,8 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
           </span>
         )}
         <span
-          className={`text-[0.55rem] font-bold tracking-widest uppercase transition-colors ${textColor}`}
+          // FIX: Improved font size and tracking for better mobile readability
+          className={`text-[0.6rem] font-bold tracking-wider uppercase transition-colors ${textColor}`}
         >
           {tab.label}
         </span>
