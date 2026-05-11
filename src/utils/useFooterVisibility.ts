@@ -13,7 +13,7 @@ export function useFooterVisibility(): boolean {
     // On onboarding pages, footer is hidden by App.tsx, so always show fixed footer
     const isOnboarding = typeof window !== 'undefined' && window.location.pathname.startsWith('/onboarding');
     if (isOnboarding) {
-      setIsFooterVisible(false);
+      requestAnimationFrame(() => setIsFooterVisible(false));
       return;
     }
 
@@ -40,7 +40,7 @@ export function useFooterVisibility(): boolean {
       
       if (!footer) {
         // If no footer found, keep the fixed footer visible
-        setIsFooterVisible(false);
+        requestAnimationFrame(() => setIsFooterVisible(false));
         return null;
       }
 

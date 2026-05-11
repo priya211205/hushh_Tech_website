@@ -10,6 +10,8 @@
     "dco:check": "bash scripts/ci/check-dco.sh",
     "env:check": "node scripts/ci/check-env-contract.mjs",
     "lint:ci": "bash scripts/ci/lint-ci.sh",
+    "lint": "eslint src --quiet",
+    "lint:fix": "eslint src --fix",
     "pr:hygiene": "node scripts/ci/check-pr-hygiene.mjs",
     "security:gitleaks": "bash scripts/security/run-gitleaks.sh",
     "security:audit": "bash scripts/security/open-source-audit.sh",

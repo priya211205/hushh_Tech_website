@@ -13,9 +13,8 @@ vi.mock("../src/auth/AuthSessionProvider", () => ({
   }),
 }));
 
-import HushhTechFooter, {
-  HushhFooterTab,
-} from "../src/components/hushh-tech-footer/HushhTechFooter";
+import HushhTechFooter from "../src/components/hushh-tech-footer/HushhTechFooter";
+import { HushhFooterTab } from "../src/components/hushh-tech-footer/types";
 import MobileBottomNav from "../src/components/MobileBottomNav";
 
 describe("navigation current-page semantics", () => {

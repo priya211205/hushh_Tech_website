@@ -10,9 +10,8 @@ import HushhTechBackHeader from "../../components/hushh-tech-back-header/HushhTe
 import HushhTechCta, {
   HushhTechCtaVariant,
 } from "../../components/hushh-tech-cta/HushhTechCta";
-import HushhTechFooter, {
-  HushhFooterTab,
-} from "../../components/hushh-tech-footer/HushhTechFooter";
+import HushhTechFooter from "../../components/hushh-tech-footer/HushhTechFooter";
+import { HushhFooterTab } from "../../components/hushh-tech-footer/types";
 
 /* ── Playfair heading style ── */
 const playfair = { fontFamily: "'Playfair Display', serif" };

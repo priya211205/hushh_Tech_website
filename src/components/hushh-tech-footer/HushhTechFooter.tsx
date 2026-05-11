@@ -5,14 +5,11 @@ import {
   buildLoginRedirectPath,
   isGuestAuthRoute,
 } from "../../auth/routePolicy";
-
-/** Enum for footer navigation tabs */
-export enum HushhFooterTab {
-  HOME = "home",
-  FUND_A = "fund_a",
-  COMMUNITY = "community",
-  PROFILE = "profile",
-}
+import {
+  HushhFooterTab,
+  type FooterTabConfig,
+  STATIC_TABS,
+} from "./types";
 
 interface HushhTechFooterProps {
   activeTab?: HushhFooterTab;
@@ -20,31 +17,14 @@ interface HushhTechFooterProps {
   className?: string;
 }
 
-const STATIC_TABS = [
-  { id: HushhFooterTab.HOME, icon: "home", label: "Home" },
-  { id: HushhFooterTab.FUND_A, icon: null, label: "Fund A" },
-  { id: HushhFooterTab.COMMUNITY, icon: "groups", label: "Comm" },
-];
-
-type FooterTabConfig = {
-  id: HushhFooterTab;
-  icon: string | null;
-  label: string;
-  path: string;
-};
-
 const FundAIcon: React.FC<{ isActive: boolean }> = ({ isActive }) => {
   return (
     <div
-      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isActive
-        ? "border-white"
-        : "border-gray-400 group-hover:border-white"
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isActive ? "border-white" : "border-gray-400 group-hover:border-white"
         }`}
     >
       <div
-        className={`w-[1px] h-2 transition-colors ${isActive
-          ? "bg-white"
-          : "bg-gray-400 group-hover:bg-white"
+        className={`w-[1px] h-2 transition-colors ${isActive ? "bg-white" : "bg-gray-400 group-hover:bg-white"
           }`}
       />
     </div>
@@ -104,7 +84,6 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
       <button
         key={tab.id}
         onClick={() => handleTabClick(tab)}
-        // FIX: Accessibility improvement with better focus and title
         className="flex flex-col items-center gap-1 group cursor-pointer bg-transparent border-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded-lg px-1"
         aria-label={tab.label}
         title={tab.label}
@@ -121,7 +100,6 @@ const HushhTechFooter: React.FC<HushhTechFooterProps> = ({
           </span>
         )}
         <span
-          // FIX: Improved font size and tracking for better mobile readability
           className={`text-[0.6rem] font-bold tracking-wider uppercase transition-colors ${textColor}`}
         >
           {tab.label}
