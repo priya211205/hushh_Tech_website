@@ -1,32 +1,35 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
-import { Box } from '@chakra-ui/react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  Box,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Button,
+  VStack
+} from '@chakra-ui/react';
 import A2AScenarioSetupScreen from './A2AScenarioSetupScreen';
 import A2AConversationScreen from './A2AConversationScreen';
 import A2AResultSummaryScreen from './A2AResultSummaryScreen';
 import { generateA2AConversation } from './conversationGenerator';
 import type {
   A2APlaygroundState,
-  A2APlaygroundStep,
   A2AScenarioConfig,
-  A2AScenarioResult,
   ConversationMessage,
   A2APlaygroundContainerProps,
 } from '../../types/a2aPlayground';
 
 /**
  * A2APlaygroundContainer
- * 
- * State machine that manages the 3-screen A2A Playground demo:
- * 1. SETUP - Configure scenario (bank, user, operations)
- * 2. CONVERSATION - Watch agents collaborate in real-time
- * 3. RESULT - View KYC decision and export summary
+ * * State machine managing the 3-screen A2A Playground flow:
+ * 1. SETUP - Scenario configuration
+ * 2. CONVERSATION - Real-time agent interaction
+ * 3. RESULT - Final KYC decision and summary
  */
-const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
-  defaultRelyingPartyId,
-}) => {
-  // Main state
+const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = () => {
+  // Main State Object
   const [state, setState] = useState<A2APlaygroundState>({
     step: 'SETUP',
     config: null,
@@ -36,45 +39,48 @@ const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
     error: null,
   });
 
-  // Ref for cancelling ongoing conversation
+  // Ref to handle cancellations and prevent memory leaks
   const abortRef = useRef<boolean>(false);
 
+  // Cleanup: Ensure background processes stop if component unmounts
+  useEffect(() => {
+    return () => {
+      abortRef.current = true;
+    };
+  }, []);
+
   /**
-   * Handle running a new scenario
-   * Transitions from SETUP → CONVERSATION and starts generating messages
+   * Handle Scenario Execution
+   * Transitions from SETUP to CONVERSATION
    */
   const handleRunScenario = useCallback(async (config: A2AScenarioConfig) => {
-    // Reset abort flag
     abortRef.current = false;
 
-    // Move to conversation screen
-    setState((prev) => ({
-      ...prev,
+    setState({
       step: 'CONVERSATION',
       config,
       messages: [],
       isRunning: true,
       result: null,
       error: null,
-    }));
+    });
 
     try {
-      // Generate conversation messages with delays
-      const { messages, result } = await generateA2AConversation(
+      // Execute the generator logic
+      const { result } = await generateA2AConversation(
         config,
-        // Callback to add messages one by one
         (message: ConversationMessage) => {
           if (abortRef.current) return;
+          // Use functional update to ensure message array integrity
           setState((prev) => ({
             ...prev,
             messages: [...prev.messages, message],
           }));
         },
-        // Check if aborted
         () => abortRef.current
       );
 
-      // Set final result
+      // Finalize simulation state
       if (!abortRef.current) {
         setState((prev) => ({
           ...prev,
@@ -83,42 +89,30 @@ const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
         }));
       }
     } catch (error) {
-      console.error('A2A conversation error:', error);
-      if (!abortRef.current) {
-        setState((prev) => ({
-          ...prev,
-          isRunning: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        }));
-      }
+      if (abortRef.current) return;
+
+      console.error('A2A simulation error:', error);
+      setState((prev) => ({
+        ...prev,
+        isRunning: false,
+        error: error instanceof Error ? error.message : 'An unexpected simulation error occurred.',
+      }));
     }
   }, []);
 
   /**
-   * Navigate to result screen
+   * Navigation Handlers
    */
   const handleViewResult = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      step: 'RESULT',
-    }));
+    setState((prev) => ({ ...prev, step: 'RESULT' }));
   }, []);
 
-  /**
-   * Go back to conversation screen from result
-   */
   const handleViewConversation = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      step: 'CONVERSATION',
-    }));
+    setState((prev) => ({ ...prev, step: 'CONVERSATION' }));
   }, []);
 
-  /**
-   * Reset to setup screen for a new scenario
-   */
   const handleRunAnother = useCallback(() => {
-    abortRef.current = true; // Cancel any ongoing conversation
+    abortRef.current = true; // Stop any ongoing simulation
     setState({
       step: 'SETUP',
       config: null,
@@ -129,8 +123,46 @@ const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
     });
   }, []);
 
-  // Render current screen based on step
+  /**
+   * Screen Selection Logic
+   */
   const renderScreen = () => {
+    // Priority 1: Error Display
+    if (state.error) {
+      return (
+        <VStack h="100vh" justify="center" p={8}>
+          <Alert
+            status="error"
+            variant="subtle"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            textAlign="center"
+            borderRadius="xl"
+            maxW="md"
+            py={10}
+          >
+            <AlertIcon boxSize="40px" mr={0} />
+            <AlertTitle mt={4} mb={1} fontSize="lg">
+              Simulation Failed
+            </AlertTitle>
+            <AlertDescription fontSize="sm">
+              {state.error}
+            </AlertDescription>
+            <Button
+              mt={6}
+              colorScheme="red"
+              variant="solid"
+              onClick={handleRunAnother}
+            >
+              Restart Simulation
+            </Button>
+          </Alert>
+        </VStack>
+      );
+    }
+
+    // Priority 2: State Machine Steps
     switch (state.step) {
       case 'SETUP':
         return (
@@ -140,10 +172,7 @@ const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
         );
 
       case 'CONVERSATION':
-        if (!state.config) {
-          // Should not happen, but handle gracefully
-          return null;
-        }
+        if (!state.config) return null;
         return (
           <A2AConversationScreen
             config={state.config}
@@ -155,10 +184,7 @@ const A2APlaygroundContainer: React.FC<A2APlaygroundContainerProps> = ({
         );
 
       case 'RESULT':
-        if (!state.config || !state.result) {
-          // Should not happen, but handle gracefully
-          return null;
-        }
+        if (!state.config || !state.result) return null;
         return (
           <A2AResultSummaryScreen
             config={state.config}
