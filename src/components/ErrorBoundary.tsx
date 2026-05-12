@@ -1,8 +1,11 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { cn } from '../lib/utils';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  className?: string;
+  onReset?: () => void;
 }
 
 interface State {
@@ -25,17 +28,33 @@ class ErrorBoundary extends Component<Props, State> {
     // TODO: Send to error tracking service (e.g., Sentry, LogRocket)
   }
 
+  resetErrorBoundary = () => {
+    // Allows parent components to retry failed operations before resetting the UI
+    this.props.onReset?.();
+    this.setState({ hasError: false, error: undefined });
+  };
+
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center p-8 max-w-md">
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      // Safe environment check for both Webpack (Next.js/CRA) and Vite
+      const isDev =
+        (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') ||
+        (typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV);
+
+      return (
+        <div className={cn("flex flex-col items-center justify-center p-6 w-full h-full min-h-[300px] bg-gray-50 rounded-xl border border-gray-200", this.props.className)}>
+          <div className="text-center max-w-md w-full">
             <div className="mb-6">
               <svg
                 className="mx-auto h-16 w-16 text-red-500"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -45,29 +64,41 @@ class ErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Something went wrong
+
+            <h1 className="text-xl font-bold text-gray-900 mb-3">
+              Component Error
             </h1>
-            <p className="text-gray-600 mb-6">
-              We're sorry for the inconvenience. Please refresh the page to continue.
+            <p className="text-sm text-gray-600 mb-6">
+              We're sorry for the inconvenience. An unexpected error occurred in this section of the app.
             </p>
-            {this.state.error && process.env.NODE_ENV === 'development' && (
-              <details className="mb-6 text-left bg-gray-100 p-4 rounded-lg">
-                <summary className="cursor-pointer font-semibold text-gray-700 mb-2">
+
+            {isDev && this.state.error && (
+              <details className="mb-6 text-left bg-gray-100 p-4 rounded-lg border border-gray-200">
+                <summary className="cursor-pointer font-semibold text-xs text-gray-700 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded">
                   Error Details (Development Only)
                 </summary>
-                <pre className="text-xs text-red-600 overflow-auto">
+                <pre className="text-[11px] text-red-600 overflow-auto whitespace-pre-wrap break-words max-h-48">
                   {this.state.error.toString()}
+                  {'\n'}
                   {this.state.error.stack}
                 </pre>
               </details>
             )}
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Refresh Page
-            </button>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={this.resetErrorBoundary}
+                className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       );
