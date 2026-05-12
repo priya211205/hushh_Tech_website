@@ -1,6 +1,5 @@
-// AccessControlManager.tsx
-import { useEffect, useState } from "react";
-import { Spinner, Box, useToast } from "@chakra-ui/react";
+import { useEffect, useState, useCallback } from "react";
+import { Spinner, Box, Text, Button, useToast, Center } from "@chakra-ui/react";
 import NDARequestModal from "./NDARequestModal";
 import NDADocumentModal from "./NDADocumentModal";
 import {
@@ -14,7 +13,6 @@ const CommunityPage: React.FC = () => {
   return (
     <Box p={4}>
       <h1>Welcome to the Community</h1>
-      {/* Add dropdowns for funds, investors, etc. as needed */}
     </Box>
   );
 };
@@ -31,7 +29,34 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
   const [loading, setLoading] = useState(false);
   const toast = useToast();
 
-  // Check the current access status on component mount
+  // DRY: Extracted NDA fetch logic since it's used in two places
+  const fetchAndOpenNdaModal = useCallback(async () => {
+    try {
+      const ndaResponse = await getNdaMetadata(session.access_token);
+      if (ndaResponse.status === "success") {
+        setNdaMetadata(ndaResponse.metadata);
+        setIsNdaModalOpen(true);
+      } else {
+        toast({
+          title: "Error",
+          description: ndaResponse.message || "Error fetching NDA metadata.",
+          status: "error",
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error fetching NDA metadata:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data || "Error fetching NDA metadata.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+  }, [session.access_token, toast]);
+
   useEffect(() => {
     const loadAccessStatus = async () => {
       setLoading(true);
@@ -43,20 +68,7 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
         if (res === "Not Applied") {
           setIsRequestModalOpen(true);
         } else if (res === "Pending: Waiting for NDA Process") {
-          const ndaResponse = await getNdaMetadata(session.access_token);
-          if (ndaResponse.status === "success") {
-            setNdaMetadata(ndaResponse.metadata);
-            setIsNdaModalOpen(true);
-          } else {
-            toast({
-              title: "Error",
-              description:
-                ndaResponse.message || "Error fetching NDA metadata.",
-              status: "error",
-              duration: 4000,
-              isClosable: true,
-            });
-          }
+          await fetchAndOpenNdaModal();
         } else if (res === "Rejected") {
           toast({
             title: "Request Rejected",
@@ -83,47 +95,23 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
           duration: 4000,
           isClosable: true,
         });
+      } finally {
+        setLoading(false); // Use finally to ensure loading always stops
       }
-      setLoading(false);
     };
 
     loadAccessStatus();
-  }, [session, toast]);
+  }, [session, toast, fetchAndOpenNdaModal]);
 
-  // Called when the user submits the request access form.
   const handleRequestSubmit = async (result: string) => {
     setAccessStatus(result);
-    // If the response requires NDA processing, fetch and show NDA modal.
+    setIsRequestModalOpen(false); // Fix: Ensure the first modal closes
+
     if (result === "Pending: Waiting for NDA Process") {
-      try {
-        const ndaResponse = await getNdaMetadata(session.access_token);
-        if (ndaResponse.status === "success") {
-          setNdaMetadata(ndaResponse.metadata);
-          setIsNdaModalOpen(true);
-        } else {
-          toast({
-            title: "Error",
-            description:
-              ndaResponse.message || "Error fetching NDA metadata.",
-            status: "error",
-            duration: 4000,
-            isClosable: true,
-          });
-        }
-      } catch (error: any) {
-        console.error("Error fetching NDA metadata:", error);
-        toast({
-          title: "Error",
-          description: error.response?.data || "Error fetching NDA metadata.",
-          status: "error",
-          duration: 4000,
-          isClosable: true,
-        });
-      }
+      await fetchAndOpenNdaModal();
     }
   };
 
-  // Called when the user accepts the NDA in the NDA modal.
   const handleNdaAccept = async () => {
     try {
       const response = await acceptNda(session.access_token);
@@ -138,31 +126,61 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
         });
         setAccessStatus("Approved");
         setIsNdaModalOpen(false);
-      } 
+      }
     } catch (error: any) {
       console.error("Error accepting NDA:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.response?.data || "Could not accept NDA.",
-      //   status: "error",
-      //   duration: 4000,
-      //   isClosable: true,
-      // });
+      // Fix: Uncommented error handling so API failures don't fail silently
+      toast({
+        title: "Error",
+        description: error.response?.data || "Could not accept NDA.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
     }
   };
 
   if (loading) {
-    return <Spinner size="xl" />;
+    return (
+      <Center h="100vh">
+        <Spinner size="xl" />
+      </Center>
+    );
   }
 
-  // If the access status is approved, show the community page.
   if (accessStatus === "Approved") {
     return <CommunityPage />;
   }
 
+  // Fix: Provide a fallback UI so the screen is never completely blank
+  // if modals are closed or the user is in a pending/rejected state.
   return (
-    <>
-      {/* Request access modal */}
+    <Box p={8} textAlign="center">
+      {accessStatus === "Not Applied" && !isRequestModalOpen && (
+        <Button colorScheme="blue" onClick={() => setIsRequestModalOpen(true)}>
+          Request Community Access
+        </Button>
+      )}
+
+      {accessStatus === "Pending: Waiting for NDA Process" && !isNdaModalOpen && (
+        <Button colorScheme="blue" onClick={() => setIsNdaModalOpen(true)}>
+          Review & Sign NDA
+        </Button>
+      )}
+
+      {accessStatus === "Pending" && (
+        <Text fontSize="lg" fontWeight="medium">
+          Your access request is currently under review by our team.
+        </Text>
+      )}
+
+      {accessStatus === "Rejected" && (
+        <Text fontSize="lg" color="red.500" fontWeight="medium">
+          Your request was rejected. Please try re-applying in a few days.
+        </Text>
+      )}
+
+      {/* Modals */}
       <NDARequestModal
         isOpen={isRequestModalOpen}
         onClose={() => setIsRequestModalOpen(false)}
@@ -170,7 +188,6 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
         onSubmit={handleRequestSubmit}
       />
 
-      {/* NDA document modal */}
       <NDADocumentModal
         session={session}
         isOpen={isNdaModalOpen}
@@ -178,7 +195,7 @@ const AccessControlManager: React.FC<AccessControlManagerProps> = ({ session }) 
         ndaMetadata={ndaMetadata}
         onAccept={handleNdaAccept}
       />
-    </>
+    </Box>
   );
 };
 

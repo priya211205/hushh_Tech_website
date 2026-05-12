@@ -6,27 +6,33 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
   indicatorClassName?: string;
 }
 
-const clampProgress = (value?: number | null) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 0;
-  return Math.min(100, Math.max(0, value));
-};
-
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, indicatorClassName = '', ...props }, ref) => {
-  const safeValue = clampProgress(value);
+>(({ className, value, indicatorClassName, ...props }, ref) => {
+  // Allow null/undefined to pass through for Radix's indeterminate state
+  // Otherwise, ensure the value is between 0 and 100
+  const safeValue = value === null || value === undefined
+    ? null
+    : Math.min(100, Math.max(0, value));
 
   return (
     <ProgressPrimitive.Root
       ref={ref}
       value={safeValue}
-      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-slate-100', className)}
+      className={cn(
+        'relative h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800',
+        className
+      )}
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className={`h-full w-full flex-1 transition-transform duration-500 ease-out ${indicatorClassName}`}
-        style={{ transform: `translateX(-${100 - safeValue}%)` }}
+        className={cn(
+          // Added a default background color (bg-primary or bg-slate-900)
+          'h-full w-full flex-1 bg-slate-900 transition-all duration-500 ease-out dark:bg-slate-50',
+          indicatorClassName
+        )}
+        style={{ transform: `translateX(-${100 - (safeValue || 0)}%)` }}
       />
     </ProgressPrimitive.Root>
   );
