@@ -1,4 +1,6 @@
 import React from "react";
+// Make sure this path points to where you saved your utils.ts file
+import { cn } from "./utils";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg" | "icon";
@@ -10,18 +12,12 @@ export interface ButtonProps
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: [
-    "bg-black text-white border border-black",
-    "shadow-lg hover:shadow-xl hover:bg-black/90",
-  ].join(" "),
-  secondary: [
-    "bg-white text-black border border-black",
-    "hover:bg-gray-50",
-  ].join(" "),
-  ghost: [
-    "bg-transparent text-black border border-transparent",
-    "hover:bg-gray-100",
-  ].join(" "),
+  primary:
+    "bg-black text-white border border-black shadow-lg hover:shadow-xl hover:bg-black/90",
+  secondary:
+    "bg-white text-black border border-black hover:bg-gray-50",
+  ghost:
+    "bg-transparent text-black border border-transparent hover:bg-gray-100",
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
@@ -31,16 +27,8 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
   icon: "h-10 w-10 p-0",
 };
 
-const BASE_CLASSES = [
-  "inline-flex items-center justify-center gap-2",
-  "font-semibold tracking-wide",
-  "cursor-pointer",
-  "transition-all duration-200 ease-out",
-  "hover:-translate-y-px active:translate-y-0 active:scale-[0.98]",
-  "disabled:opacity-50 disabled:cursor-not-allowed",
-  "disabled:hover:translate-y-0 disabled:active:scale-100",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
-].join(" ");
+const BASE_CLASSES =
+  "inline-flex items-center justify-center gap-2 font-semibold tracking-wide cursor-pointer transition-all duration-200 ease-out hover:-translate-y-px active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2";
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -48,7 +36,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       type = "button",
       variant = "primary",
       size = "md",
-      className = "",
+      className,
       ...props
     },
     ref
@@ -56,7 +44,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     <button
       ref={ref}
       type={type}
-      className={`${BASE_CLASSES} ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+      // The cn() function handles all the class merging safely!
+      className={cn(
+        BASE_CLASSES,
+        VARIANT_CLASSES[variant],
+        SIZE_CLASSES[size],
+        className
+      )}
       {...props}
     />
   )
