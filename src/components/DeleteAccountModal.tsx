@@ -11,11 +11,6 @@ interface DeleteAccountModalProps {
   onAccountDeleted: () => void;
 }
 
-/**
- * Delete Account Modal — Glassmorphism design matching Step 4 location modal.
- * Playfair Display headings, black/white buttons, frosted overlay.
- * Backend logic is preserved — only UI is redesigned.
- */
 const DeleteAccountModal = ({
   isOpen,
   onClose,
@@ -31,9 +26,6 @@ const DeleteAccountModal = ({
 
   const isDeleteEnabled = confirmText.toUpperCase() === "DELETE";
 
-  // =====================================================
-  // Backend logic
-  // =====================================================
   const handleDeleteAccount = async () => {
     if (!isDeleteEnabled || !config.supabaseClient) return;
 
@@ -58,22 +50,17 @@ const DeleteAccountModal = ({
 
         if (!accessToken) {
           throw new Error(
-            "Session expired. Please log out and log in again to delete your account."
+            t("deleteAccount.sessionExpired", "Session expired. Please log out and log in again to delete your account.")
           );
         }
-
-        console.log("[DeleteAccount] Using validated fallback session...");
       } else if (refreshData.session?.access_token) {
-        console.log("[DeleteAccount] Session refreshed successfully");
         accessToken = refreshData.session.access_token;
       } else {
-        console.error("[DeleteAccount] No session after refresh");
         throw new Error(
-          "Unable to verify your session. Please log out and log in again."
+          t("deleteAccount.sessionInvalid", "Unable to verify your session. Please log out and log in again.")
         );
       }
 
-      console.log("[DeleteAccount] Calling delete endpoint...");
       const response = await fetch("/api/delete-account", {
         method: "POST",
         headers: {
@@ -85,16 +72,14 @@ const DeleteAccountModal = ({
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || data?.success !== true) {
-        console.error("[DeleteAccount] Delete API error:", data);
-        throw new Error(data?.error || "Failed to delete account");
+        throw new Error(data?.error || t("deleteAccount.defaultError", "Failed to delete account"));
       }
 
-      console.log("[DeleteAccount] Account deleted successfully", data);
       await handleAccountDeleted();
 
       toast({
-        title: t("deleteAccount.successTitle"),
-        description: t("deleteAccount.successMessage"),
+        title: t("deleteAccount.successTitle", "Account Deleted"),
+        description: t("deleteAccount.successMessage", "Your account has been successfully deleted."),
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -106,8 +91,8 @@ const DeleteAccountModal = ({
     } catch (error: any) {
       console.error("[DeleteAccount] Error:", error);
       toast({
-        title: t("deleteAccount.errorTitle"),
-        description: error.message || t("deleteAccount.errorMessage"),
+        title: t("deleteAccount.errorTitle", "Error"),
+        description: error.message || t("deleteAccount.errorMessage", "Something went wrong."),
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -118,6 +103,8 @@ const DeleteAccountModal = ({
   };
 
   const handleClose = () => {
+    // BUG FIX: Prevent closing the modal while the API call is running
+    if (isDeleting) return;
     setConfirmText("");
     onClose();
   };
@@ -126,23 +113,18 @@ const DeleteAccountModal = ({
     isOpen,
     containerRef: modalRef,
     initialFocusRef: confirmInputRef,
-    onClose: handleClose,
+    onClose: handleClose, // Now protected by the isDeleting check
   });
 
   if (!isOpen) return null;
 
-  // =====================================================
-  // Glassmorphism Modal — Matches Step 4 location modal
-  // =====================================================
   return (
     <>
-      {/* ── Frosted glass overlay ── */}
       <div
         className="fixed inset-0 z-40 bg-white/60 backdrop-blur-sm"
         onClick={handleClose}
       />
 
-      {/* ── Modal card — bottom-sheet on mobile, centered on desktop ── */}
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0">
         <div
           ref={modalRef}
@@ -153,7 +135,6 @@ const DeleteAccountModal = ({
           aria-labelledby="delete-account-title"
           tabIndex={-1}
         >
-          {/* ── Warning icon in circle ── */}
           <div className="mb-8">
             <div className="w-20 h-20 rounded-full border border-gray-200 bg-white flex items-center justify-center shadow-sm">
               <span
@@ -165,44 +146,41 @@ const DeleteAccountModal = ({
             </div>
           </div>
 
-          {/* ── Heading & description ── */}
           <div className="space-y-4 mb-8 px-2">
             <h2
               id="delete-account-title"
               className="text-[1.75rem] leading-[1.2] text-black lowercase tracking-tight"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              are you sure?
+              {t("deleteAccount.title", "are you sure?")}
             </h2>
             <p className="text-gray-500 text-[0.85rem] leading-relaxed font-normal lowercase max-w-[90%] mx-auto">
-              this permanently deletes your profile, onboarding, plaid,
-              chats, nda, kyc, and stored files. only a minimal de-identified
-              payment audit may remain for compliance.
+              {t(
+                "deleteAccount.warning",
+                "this permanently deletes your profile, onboarding, plaid, chats, nda, kyc, and stored files. only a minimal de-identified payment audit may remain for compliance."
+              )}
             </p>
           </div>
 
-          {/* ── Confirmation input ── */}
           <div className="w-full mb-8">
             <p className="text-xs text-gray-500 lowercase font-semibold mb-3 tracking-wide">
-              type DELETE to confirm
+              {t("deleteAccount.typePrompt", "type DELETE to confirm")}
             </p>
             <input
               ref={confirmInputRef}
               type="text"
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-              placeholder="DELETE"
+              placeholder={t("deleteAccount.placeholder", "DELETE")}
               className="w-full h-[52px] border border-gray-200 bg-white px-4 text-sm text-black font-mono tracking-[2px] placeholder:text-gray-300 focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-colors"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
-              aria-label="Type DELETE to confirm account deletion"
+              aria-label={t("deleteAccount.inputAria", "Type DELETE to confirm account deletion")}
             />
           </div>
 
-          {/* ── Action buttons ── */}
           <div className="w-full space-y-4">
-            {/* Delete — primary black */}
             <button
               onClick={handleDeleteAccount}
               disabled={!isDeleteEnabled || isDeleting}
@@ -211,7 +189,7 @@ const DeleteAccountModal = ({
               {isDeleting ? (
                 <>
                   <div className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
-                  <span>deleting...</span>
+                  <span>{t("deleteAccount.deleting", "deleting...")}</span>
                 </>
               ) : (
                 <>
@@ -221,30 +199,19 @@ const DeleteAccountModal = ({
                   >
                     delete_forever
                   </span>
-                  <span>delete my account</span>
+                  <span>{t("deleteAccount.buttonConfirm", "delete my account")}</span>
                 </>
               )}
             </button>
 
-            {/* Keep — outlined white */}
             <button
               onClick={handleClose}
               disabled={isDeleting}
               className="w-full h-12 border border-black bg-white text-black font-medium text-[0.8rem] hover:bg-gray-50 transition-colors active:scale-[0.99] disabled:opacity-50 lowercase"
             >
-              keep my account
+              {t("deleteAccount.buttonCancel", "keep my account")}
             </button>
-
-            {/* Cancel — text link */}
-            <div className="pt-2">
-              <button
-                onClick={handleClose}
-                disabled={isDeleting}
-                className="text-xs font-medium text-gray-400 hover:text-black transition-colors lowercase disabled:opacity-50"
-              >
-                cancel
-              </button>
-            </div>
+            {/* The redundant text cancel button was removed to improve UI clarity */}
           </div>
         </div>
       </div>
