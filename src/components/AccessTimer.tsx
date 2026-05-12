@@ -3,46 +3,77 @@
 
 import { Box, Text, VStack, HStack, Icon, Progress } from '@chakra-ui/react';
 import { Clock, AlertCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface AccessTimerProps {
   expiresAt: string; // ISO timestamp
   onExpired: () => void;
 }
 
+// Extracted calculation logic to be used both in initialization and the interval
+const calculateTimeRemaining = (expiryStr: string) => {
+  const now = new Date().getTime();
+  const expiry = new Date(expiryStr).getTime();
+  const diff = expiry - now;
+
+  if (diff <= 0) {
+    return { minutes: 0, seconds: 0, percentage: 0, isExpired: true };
+  }
+
+  const totalSeconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  // Calculate percentage (30 min = 1800 seconds)
+  const percentRemaining = (totalSeconds / 1800) * 100;
+  const percentage = Math.max(0, Math.min(100, percentRemaining));
+
+  return { minutes, seconds, percentage, isExpired: false };
+};
+
 export function AccessTimer({ expiresAt, onExpired }: AccessTimerProps) {
-  const [timeRemaining, setTimeRemaining] = useState({ minutes: 30, seconds: 0 });
-  const [percentage, setPercentage] = useState(100);
+  // Initialize state lazily with the exact time to prevent UI flickering
+  const [timeState, setTimeState] = useState(() => calculateTimeRemaining(expiresAt));
+
+  // Refs to prevent infinite loops and unnecessary interval resets
+  const hasExpiredRef = useRef(false);
+  const onExpiredRef = useRef(onExpired);
+
+  // Keep the callback ref up to date without triggering useEffect re-runs
+  useEffect(() => {
+    onExpiredRef.current = onExpired;
+  }, [onExpired]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const expiry = new Date(expiresAt).getTime();
-      const diff = expiry - now;
+    // Reset expiration flag if expiresAt changes
+    hasExpiredRef.current = false;
 
-      if (diff <= 0) {
-        setTimeRemaining({ minutes: 0, seconds: 0 });
-        setPercentage(0);
+    // Check immediately in case it expired before the effect fired
+    const initialCheck = calculateTimeRemaining(expiresAt);
+    setTimeState(initialCheck);
+
+    if (initialCheck.isExpired && !hasExpiredRef.current) {
+      hasExpiredRef.current = true;
+      onExpiredRef.current();
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const newState = calculateTimeRemaining(expiresAt);
+      setTimeState(newState);
+
+      if (newState.isExpired && !hasExpiredRef.current) {
+        hasExpiredRef.current = true; // Lock it so it only fires once
         clearInterval(interval);
-        onExpired();
-      } else {
-        const totalSeconds = Math.floor(diff / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        
-        setTimeRemaining({ minutes, seconds });
-        
-        // Calculate percentage (30 min = 1800 seconds)
-        const percentRemaining = (totalSeconds / 1800) * 100;
-        setPercentage(Math.max(0, Math.min(100, percentRemaining)));
+        onExpiredRef.current();
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [expiresAt, onExpired]);
+  }, [expiresAt]); // Safely removed onExpired from deps
 
-  const isLowTime = timeRemaining.minutes < 5;
-  const isVeryLowTime = timeRemaining.minutes < 2;
+  const isLowTime = timeState.minutes < 5 && !timeState.isExpired;
+  const isVeryLowTime = timeState.minutes < 2 && !timeState.isExpired;
 
   return (
     <Box
@@ -65,25 +96,25 @@ export function AccessTimer({ expiresAt, onExpired }: AccessTimerProps) {
             borderRadius="full"
             p={2}
           >
-            <Icon 
-              as={isVeryLowTime ? AlertCircle : Clock} 
-              boxSize={5} 
-              color="white" 
+            <Icon
+              as={isVeryLowTime ? AlertCircle : Clock}
+              boxSize={5}
+              color="white"
             />
           </Box>
-          
+
           <VStack align="start" spacing={0}>
             <Text fontSize="xs" fontWeight="500" color="gray.600">
               🔓 Access Unlocked
             </Text>
             <HStack spacing={1}>
-              <Text 
-                fontSize="2xl" 
-                fontWeight="bold" 
+              <Text
+                fontSize="2xl"
+                fontWeight="bold"
                 color={isVeryLowTime ? 'red.600' : isLowTime ? 'orange.600' : 'green.600'}
                 fontFamily="monospace"
               >
-                {String(timeRemaining.minutes).padStart(2, '0')}:{String(timeRemaining.seconds).padStart(2, '0')}
+                {String(timeState.minutes).padStart(2, '0')}:{String(timeState.seconds).padStart(2, '0')}
               </Text>
               <Text fontSize="sm" color="gray.500">
                 remaining
@@ -117,7 +148,7 @@ export function AccessTimer({ expiresAt, onExpired }: AccessTimerProps) {
               stroke={isVeryLowTime ? '#EF4444' : isLowTime ? '#F97316' : '#10B981'}
               strokeWidth="4"
               strokeDasharray={`${2 * Math.PI * 26}`}
-              strokeDashoffset={`${2 * Math.PI * 26 * (1 - percentage / 100)}`}
+              strokeDashoffset={`${2 * Math.PI * 26 * (1 - timeState.percentage / 100)}`}
               strokeLinecap="round"
               style={{ transition: 'stroke-dashoffset 1s linear' }}
             />
@@ -131,14 +162,14 @@ export function AccessTimer({ expiresAt, onExpired }: AccessTimerProps) {
             fontWeight="bold"
             color={isVeryLowTime ? 'red.600' : isLowTime ? 'orange.600' : 'green.600'}
           >
-            {Math.round(percentage)}%
+            {Math.round(timeState.percentage)}%
           </Text>
         </Box>
       </HStack>
 
       {/* Progress Bar */}
       <Progress
-        value={percentage}
+        value={timeState.percentage}
         size="sm"
         colorScheme={isVeryLowTime ? 'red' : isLowTime ? 'orange' : 'green'}
         mt={3}
