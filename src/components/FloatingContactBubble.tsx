@@ -1,37 +1,30 @@
-import { Box, Icon, Tooltip } from '@chakra-ui/react';
+import { Icon, Tooltip, Link } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { Mail } from 'lucide-react';
-import React from 'react';
 import { useLocation } from 'react-router-dom';
 
 /**
  * FloatingContactBubble component
  * A floating bubble that appears on the right side of the screen across all pages
  * Clicking it opens email to invest@hushh.ai
- * Updated to match the template design with solid blue (#2b8cee)
  */
 
-// Create motion components
-const MotionBox = motion(Box);
+// Fix: Use motion.create(Link) to support href and anchor semantics correctly
+const MotionLink = motion.create(Link);
 
 export default function FloatingContactBubble() {
   const location = useLocation();
-  
+
   // Hide on investor profile pages (chat and developer sections have their own layout)
   const isInvestorProfilePage = location.pathname.startsWith('/investor/');
-  
-  const handleClick = () => {
-    window.location.href = 'mailto:invest@hushh.ai';
-  };
 
-  // Don't render on investor profile pages
   if (isInvestorProfilePage) {
     return null;
   }
 
   return (
-    <Tooltip 
-      label="Contact Us - invest@hushh.ai" 
+    <Tooltip
+      label="Contact Us - invest@hushh.ai"
       placement="left"
       hasArrow
       bg="gray.700"
@@ -41,63 +34,47 @@ export default function FloatingContactBubble() {
       py={2}
       borderRadius="md"
     >
-      <MotionBox
-        as="button"
+      <MotionLink
+        // Fix: Use native anchor tag semantics for mailto links
+        as="a"
+        href="mailto:invest@hushh.ai"
         position="fixed"
         bottom={{ base: '24px', md: '32px' }}
         right={{ base: '24px', md: '32px' }}
-        width={{ base: '56px', md: '56px' }}
-        height={{ base: '56px', md: '56px' }}
+        w="56px"
+        h="56px"
         borderRadius="full"
         bg="#2b8cee"
         color="white"
         display="flex"
         alignItems="center"
         justifyContent="center"
-        cursor="pointer"
         boxShadow="0 4px 14px rgba(43, 140, 238, 0.3)"
         zIndex={9999}
-        border="none"
-        outline="none"
-        onClick={handleClick}
         aria-label="Contact us via email"
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
-        _hover={{
-          bg: '#2579d4',
-        }}
+        // Native <a> tags get Enter/Space keybindings automatically
+
+        // Chakra focus handling
         _focus={{
           outline: '3px solid',
           outlineColor: 'blue.300',
           outlineOffset: '2px',
         }}
-        // Hover animation
+        // Framer Motion physics for both color and scale
         whileHover={{
           scale: 1.05,
+          backgroundColor: '#2579d4',
           boxShadow: '0 6px 20px rgba(43, 140, 238, 0.4)',
         }}
-        whileTap={{
-          scale: 0.95,
-        }}
-        // Smooth transition
-        transition={{
-          duration: 0.2,
-          ease: 'easeInOut',
-        } as any}
+        whileTap={{ scale: 0.95 }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
       >
-        {/* Mail Icon */}
-        <Icon 
-          as={Mail} 
-          boxSize={{ base: '24px', md: '24px' }}
+        <Icon
+          as={Mail}
+          boxSize="24px"
           strokeWidth={2}
         />
-      </MotionBox>
+      </MotionLink>
     </Tooltip>
   );
 }
