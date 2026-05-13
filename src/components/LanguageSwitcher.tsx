@@ -1,241 +1,116 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiGlobe, FiCheck, FiChevronDown } from 'react-icons/fi';
 
 const languages = [
   { code: 'en', name: 'English', shortCode: 'EN' },
   { code: 'zh', name: '中文', shortCode: 'ZH' },
-  { code: 'ar', name: 'العربية', shortCode: 'AR' },
+  { code: 'ar', name: 'العربية', shortCode: 'AR', dir: 'rtl' },
   { code: 'fr', name: 'Français', shortCode: 'FR' },
 ];
 
-interface LanguageSwitcherProps {
-  variant?: 'light' | 'dark';
-}
-
-const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }) => {
+const LanguageSwitcher: React.FC<{ variant?: 'light' | 'dark' }> = ({ variant = 'light' }) => {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const menuId = 'language-switcher-menu';
 
-  // Get current language short code
-  const currentLang = languages.find(l => l.code === i18n.language)?.shortCode || 'EN';
-  const currentLangIndex = Math.max(
-    languages.findIndex((language) => language.code === i18n.language),
-    0
-  );
+  const currentLangObj = languages.find(l => l.code === i18n.language) || languages[0];
 
-  const closeDropdown = React.useCallback((returnFocus = false) => {
+  // FIX 1: Robust RTL/Lang listener
+  useEffect(() => {
+    const dir = currentLangObj.code === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.setAttribute('dir', dir);
+    document.documentElement.setAttribute('lang', currentLangObj.code);
+  }, [i18n.language, currentLangObj.code]);
+
+  const closeDropdown = useCallback((returnFocus = false) => {
     setIsOpen(false);
     setActiveIndex(-1);
-
-    if (returnFocus) {
-      triggerRef.current?.focus();
-    }
+    if (returnFocus) triggerRef.current?.focus();
   }, []);
 
-  // Handle click outside to close dropdown
+  // Handle Click Outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        closeDropdown();
-      }
+    const handleClick = (e: MouseEvent) => {
+      if (!dropdownRef.current?.contains(e.target as Node)) closeDropdown();
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen, closeDropdown]);
+
+  const changeLanguage = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+    closeDropdown(true);
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent) => {
+    if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex(languages.findIndex(l => l.code === i18n.language));
+    }
+  };
+
+  const handleOptionKeyDown = (event: React.KeyboardEvent, index: number) => {
+    const move = (dir: number) => {
+      event.preventDefault();
+      setActiveIndex((index + dir + languages.length) % languages.length);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [closeDropdown]);
+    if (event.key === 'ArrowDown') move(1);
+    else if (event.key === 'ArrowUp') move(-1);
+    else if (event.key === 'Escape') closeDropdown(true);
+    else if (event.key === 'Tab') closeDropdown();
+  };
 
   useEffect(() => {
-    if (!isOpen || activeIndex < 0) return;
-
-    optionRefs.current[activeIndex]?.focus();
+    if (isOpen && activeIndex !== -1) {
+      optionRefs.current[activeIndex]?.focus();
+    }
   }, [activeIndex, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleDocumentKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (!dropdownRef.current?.contains(document.activeElement)) return;
-
-      event.preventDefault();
-      closeDropdown(true);
-    };
-
-    document.addEventListener('keydown', handleDocumentKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleDocumentKeyDown);
-    };
-  }, [closeDropdown, isOpen]);
-
-  const changeLanguage = React.useCallback((langCode: string) => {
-    i18n.changeLanguage(langCode);
-    
-    // Update document direction for RTL languages
-    if (langCode === 'ar') {
-      document.documentElement.setAttribute('dir', 'rtl');
-      document.documentElement.setAttribute('lang', 'ar');
-    } else {
-      document.documentElement.setAttribute('dir', 'ltr');
-      document.documentElement.setAttribute('lang', langCode);
-    }
-    
-    closeDropdown(true);
-  }, [closeDropdown, i18n]);
-
-  const openFromKeyboard = (index: number) => {
-    setIsOpen(true);
-    setActiveIndex(index);
-  };
-
-  const handleTriggerClick = () => {
-    if (isOpen) {
-      closeDropdown();
-      return;
-    }
-
-    setIsOpen(true);
-  };
-
-  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      openFromKeyboard(currentLangIndex);
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      openFromKeyboard(currentLangIndex);
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      openFromKeyboard(languages.length - 1);
-      return;
-    }
-
-    if (event.key === 'Escape' && isOpen) {
-      event.preventDefault();
-      closeDropdown(true);
-    }
-  };
-
-  const handleOptionKeyDown = (
-    event: React.KeyboardEvent<HTMLButtonElement>,
-    index: number,
-    langCode: string
-  ) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeDropdown(true);
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((index + 1) % languages.length);
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((index - 1 + languages.length) % languages.length);
-      return;
-    }
-
-    if (event.key === 'Home') {
-      event.preventDefault();
-      setActiveIndex(0);
-      return;
-    }
-
-    if (event.key === 'End') {
-      event.preventDefault();
-      setActiveIndex(languages.length - 1);
-      return;
-    }
-
-    if (event.key === 'Tab') {
-      closeDropdown();
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      changeLanguage(langCode);
-    }
-  };
-
-  // Dark variant styles (for dark header)
   const isDark = variant === 'dark';
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Language Selector Pill */}
+    <div className="relative z-[100]" ref={dropdownRef}>
       <button
         ref={triggerRef}
-        onClick={handleTriggerClick}
+        onClick={() => setIsOpen(!isOpen)}
         onKeyDown={handleTriggerKeyDown}
-        className={`group flex h-9 items-center gap-1 px-3 py-1.5 rounded-full transition-colors ${
-          isDark 
-            ? 'bg-gray-800 active:bg-gray-700 border border-gray-700' 
-            : 'bg-gray-100 hover:bg-gray-200 border border-transparent dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700'
-        }`}
-        aria-label="Select language"
-        aria-haspopup="menu"
+        className={`flex h-9 items-center gap-2 px-3 rounded-full transition-all active:scale-95 ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-100 border-transparent text-gray-700'
+          } border`}
         aria-expanded={isOpen}
-        aria-controls={isOpen ? menuId : undefined}
+        aria-haspopup="true"
       >
-        <FiGlobe className={`w-3.5 h-3.5 ${isDark ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`} />
-        <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'}`}>
-          {currentLang}
-        </span>
-        <FiChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''} ${isDark ? 'text-gray-500' : 'text-gray-500'}`} />
+        <FiGlobe className="w-3.5 h-3.5 opacity-70" />
+        <span className="text-xs font-bold uppercase">{currentLangObj.shortCode}</span>
+        <FiChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
-          id={menuId}
           role="menu"
-          aria-label="Language options"
-          className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-[200]"
+          className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 py-1 overflow-hidden"
         >
-          {languages.map((lang, index) => {
-            const isSelected = i18n.language === lang.code;
-            return (
-              <button
-                key={lang.code}
-                ref={(node) => {
-                  optionRefs.current[index] = node;
-                }}
-                type="button"
-                role="menuitemradio"
-                aria-checked={isSelected}
-                onClick={() => changeLanguage(lang.code)}
-                onKeyDown={(event) => handleOptionKeyDown(event, index, lang.code)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-left text-sm transition-colors
-                  ${isSelected 
-                    ? 'bg-[#135bec]/5 text-[#135bec] font-semibold' 
-                    : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-              >
-                <span>{lang.name}</span>
-                {isSelected && (
-                  <FiCheck className="w-4 h-4 text-[#135bec]" />
-                )}
-              </button>
-            );
-          })}
+          {languages.map((lang, i) => (
+            <button
+              key={lang.code}
+              ref={el => optionRefs.current[i] = el}
+              role="menuitem"
+              onClick={() => changeLanguage(lang.code)}
+              onKeyDown={(e) => handleOptionKeyDown(e, i)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${i18n.language === lang.code
+                  ? 'bg-blue-50 text-blue-600 font-bold'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                }`}
+            >
+              {lang.name}
+              {i18n.language === lang.code && <FiCheck className="w-4 h-4" />}
+            </button>
+          ))}
         </div>
       )}
     </div>
