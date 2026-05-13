@@ -28,7 +28,6 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
   );
   const currentLangObj = languages[currentLangIndex];
 
-  // Sync RTL and lang attributes
   useEffect(() => {
     const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.setAttribute('dir', dir);
@@ -41,50 +40,76 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
     if (returnFocus) triggerRef.current?.focus();
   }, []);
 
-  // Keyboard Trigger
+  // Handle Trigger Keys (Standard ARIA Menu Button Pattern)
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       setIsOpen(true);
       setActiveIndex(currentLangIndex);
-    }
-  };
-
-  // Keyboard Menu Navigation
-  const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((index + 1) % languages.length);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((index - 1 + languages.length) % languages.length);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      closeDropdown(true);
-    } else if (event.key === 'Tab') {
-      closeDropdown();
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      i18n.changeLanguage(languages[index].code);
-      closeDropdown(true);
+      setIsOpen(true);
+      setActiveIndex(languages.length - 1);
     }
   };
 
-  // Global Click-Outside & Escape
+  // Handle Menu Navigation (Supports Arrow, Home, End, Esc, Tab)
+  const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        setActiveIndex((index + 1) % languages.length);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        setActiveIndex((index - 1 + languages.length) % languages.length);
+        break;
+      case 'Home':
+        event.preventDefault();
+        setActiveIndex(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        setActiveIndex(languages.length - 1);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        closeDropdown(true);
+        break;
+      case 'Tab':
+        closeDropdown();
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        i18n.changeLanguage(languages[index].code);
+        closeDropdown(true);
+        break;
+    }
+  };
+
+  // Improved Global Handlers
   useEffect(() => {
-    const handleEvents = (e: any) => {
-      if (e.type === 'mousedown' && !dropdownRef.current?.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         closeDropdown();
       }
-      if (e.type === 'keydown' && e.key === 'Escape' && isOpen) {
-        closeDropdown(true);
+    };
+
+    const handleEscKey = (e: KeyboardEvent) => {
+      // FIX 2: Only close if the escape key was pressed while focus was inside our component
+      if (e.key === 'Escape' && isOpen) {
+        if (dropdownRef.current?.contains(document.activeElement)) {
+          closeDropdown(true);
+        }
       }
     };
-    document.addEventListener('mousedown', handleEvents);
-    document.addEventListener('keydown', handleEvents);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscKey);
     return () => {
-      document.removeEventListener('mousedown', handleEvents);
-      document.removeEventListener('keydown', handleEvents);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscKey);
     };
   }, [isOpen, closeDropdown]);
 
@@ -102,9 +127,9 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
         ref={triggerRef}
         onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
         onKeyDown={handleTriggerKeyDown}
-        className={`group flex h-9 items-center gap-2 px-3 rounded-full transition-all active:scale-95 border ${isDark
-          ? 'bg-gray-800 border-gray-700 text-white'
-          : 'bg-gray-100 border-transparent text-gray-700'
+        className={`group flex h-9 items-center gap-2 px-3 py-1.5 rounded-full transition-all active:scale-95 border ${isDark
+            ? 'bg-gray-800 border-gray-700 text-white'
+            : 'bg-gray-100 border-transparent text-gray-700'
           }`}
         aria-label="Select language"
         aria-haspopup="menu"
@@ -130,16 +155,16 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
                 key={lang.code}
                 ref={(el) => (optionRefs.current[index] = el)}
                 type="button"
-                role="menuitemradio" // CRITICAL: Matches test query selector
-                aria-checked={isSelected} // CRITICAL: Required for A11y tests
+                role="menuitemradio" // Needed for tests
+                aria-checked={isSelected} // Needed for tests
                 onClick={() => {
                   i18n.changeLanguage(lang.code);
                   closeDropdown(true);
                 }}
                 onKeyDown={(e) => handleOptionKeyDown(e, index)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-left text-sm transition-colors ${isSelected
-                  ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-900/20'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-900/20'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
               >
                 <span>{lang.name}</span>
