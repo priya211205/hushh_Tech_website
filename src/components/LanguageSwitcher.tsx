@@ -22,44 +22,35 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const menuId = 'language-switcher-menu';
 
-  const currentLangObj = languages.find(l => l.code === i18n.language) || languages[0];
+  const currentLangIndex = Math.max(
+    languages.findIndex((l) => l.code === i18n.language),
+    0
+  );
+  const currentLangObj = languages[currentLangIndex];
 
-  // Sync document direction and language attributes
+  // Sync RTL and lang attributes
   useEffect(() => {
-    const dir = currentLangObj.code === 'ar' ? 'rtl' : 'ltr';
+    const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.setAttribute('dir', dir);
-    document.documentElement.setAttribute('lang', currentLangObj.code);
-  }, [i18n.language, currentLangObj.code]);
+    document.documentElement.setAttribute('lang', i18n.language);
+  }, [i18n.language]);
 
   const closeDropdown = useCallback((returnFocus = false) => {
     setIsOpen(false);
     setActiveIndex(-1);
-    if (returnFocus) {
-      triggerRef.current?.focus();
-    }
+    if (returnFocus) triggerRef.current?.focus();
   }, []);
 
-  // Handle click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        closeDropdown();
-      }
-    };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, closeDropdown]);
-
-  // Handle keyboard interaction for the trigger
+  // Keyboard Trigger
   const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (['Enter', ' ', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       setIsOpen(true);
-      setActiveIndex(languages.findIndex(l => l.code === i18n.language));
+      setActiveIndex(currentLangIndex);
     }
   };
 
-  // Handle keyboard navigation within the menu
+  // Keyboard Menu Navigation
   const handleOptionKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
@@ -79,6 +70,24 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
     }
   };
 
+  // Global Click-Outside & Escape
+  useEffect(() => {
+    const handleEvents = (e: any) => {
+      if (e.type === 'mousedown' && !dropdownRef.current?.contains(e.target)) {
+        closeDropdown();
+      }
+      if (e.type === 'keydown' && e.key === 'Escape' && isOpen) {
+        closeDropdown(true);
+      }
+    };
+    document.addEventListener('mousedown', handleEvents);
+    document.addEventListener('keydown', handleEvents);
+    return () => {
+      document.removeEventListener('mousedown', handleEvents);
+      document.removeEventListener('keydown', handleEvents);
+    };
+  }, [isOpen, closeDropdown]);
+
   useEffect(() => {
     if (isOpen && activeIndex !== -1) {
       optionRefs.current[activeIndex]?.focus();
@@ -89,49 +98,48 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ variant = 'light' }
 
   return (
     <div className="relative z-[100]" ref={dropdownRef}>
-      {/* Language Selector Pill */}
       <button
         ref={triggerRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => (isOpen ? closeDropdown() : setIsOpen(true))}
         onKeyDown={handleTriggerKeyDown}
-        className={`group flex h-9 items-center gap-2 px-3 py-1.5 rounded-full transition-all active:scale-95 ${isDark
-            ? 'bg-gray-800 active:bg-gray-700 border-gray-700 text-white'
-            : 'bg-gray-100 hover:bg-gray-200 border-transparent text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-          } border`}
-        aria-label="Select language" // CRITICAL: Required for automated tests
+        className={`group flex h-9 items-center gap-2 px-3 rounded-full transition-all active:scale-95 border ${isDark
+          ? 'bg-gray-800 border-gray-700 text-white'
+          : 'bg-gray-100 border-transparent text-gray-700'
+          }`}
+        aria-label="Select language"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
       >
         <FiGlobe className="w-3.5 h-3.5 opacity-70" />
         <span className="text-xs font-bold uppercase">{currentLangObj.shortCode}</span>
-        <FiChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <FiChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div
           id={menuId}
           role="menu"
           aria-label="Language options"
-          className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 py-1 z-[200] overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-800 py-1 overflow-hidden"
         >
           {languages.map((lang, index) => {
             const isSelected = i18n.language === lang.code;
             return (
               <button
                 key={lang.code}
-                ref={(node) => { optionRefs.current[index] = node; }}
+                ref={(el) => (optionRefs.current[index] = el)}
                 type="button"
-                role="menuitem"
+                role="menuitemradio" // CRITICAL: Matches test query selector
+                aria-checked={isSelected} // CRITICAL: Required for A11y tests
                 onClick={() => {
                   i18n.changeLanguage(lang.code);
                   closeDropdown(true);
                 }}
-                onKeyDown={(event) => handleOptionKeyDown(event, index)}
+                onKeyDown={(e) => handleOptionKeyDown(e, index)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-left text-sm transition-colors ${isSelected
-                    ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-900/20 dark:text-blue-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-900/20'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
               >
                 <span>{lang.name}</span>
