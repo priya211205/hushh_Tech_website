@@ -1,10 +1,6 @@
-// src/components/MobileBottomNav.tsx
-// Mobile bottom navigation with 4 tabs matching the exact design reference
-// Active tab has blue circular background behind icon
-
 import React from 'react';
 import { Box, Flex, Text, Icon } from '@chakra-ui/react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FiHome, FiTrendingUp, FiUsers, FiUser } from 'react-icons/fi';
 
 interface NavItem {
@@ -12,7 +8,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   path: string;
-  matchPaths?: string[]; // Additional paths that should highlight this tab
+  matchPaths?: string[];
 }
 
 const navItems: NavItem[] = [
@@ -46,7 +42,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-// Pages where bottom nav should be hidden
 const hiddenOnPages = [
   '/onboarding',
   '/login',
@@ -55,37 +50,35 @@ const hiddenOnPages = [
   '/kyc-flow',
   '/kyc-demo',
   '/a2a-playground',
-  '/hushh-user-profile', // Hide nav on profile page for better UX (like onboarding)
+  '/hushh-user-profile',
 ];
 
 const MobileBottomNav: React.FC = () => {
-  const navigate = useNavigate();
   const location = useLocation();
+  const currentPath = location.pathname.toLowerCase();
 
-  // Check if current page should hide the nav
-  const shouldHideNav = hiddenOnPages.some(page => 
-    location.pathname.toLowerCase().startsWith(page.toLowerCase())
+  const shouldHideNav = hiddenOnPages.some(page =>
+    currentPath === page.toLowerCase() || currentPath.startsWith(`${page.toLowerCase()}/`)
   );
 
-  // Check if we're on a full-screen community post
-  const isFullScreenPost = location.pathname.startsWith('/community/') && 
-    location.pathname !== '/community';
+  const isFullScreenPost = currentPath.startsWith('/community/') &&
+    currentPath !== '/community';
 
   if (shouldHideNav || isFullScreenPost) {
     return null;
   }
 
-  // Check if a nav item is active
   const isActive = (item: NavItem): boolean => {
-    if (location.pathname === item.path) return true;
-    if (item.matchPaths?.some(p => location.pathname.startsWith(p))) return true;
-    // Special case for community - match any /community path
-    if (item.id === 'community' && location.pathname.startsWith('/community')) return true;
+    if (currentPath === item.path) return true;
+    if (item.matchPaths?.some(p => currentPath.startsWith(p))) return true;
+    if (item.id === 'community' && currentPath.startsWith('/community')) return true;
     return false;
   };
 
   return (
     <Box
+      as="nav"
+      aria-label="Mobile Bottom Navigation"
       display={{ base: 'block', md: 'none' }}
       position="fixed"
       bottom="0"
@@ -110,6 +103,8 @@ const MobileBottomNav: React.FC = () => {
           return (
             <Flex
               key={item.id}
+              as={Link}
+              to={item.path}
               direction="column"
               align="center"
               justify="center"
@@ -117,17 +112,17 @@ const MobileBottomNav: React.FC = () => {
               p="2"
               flex="1"
               h="100%"
-              cursor="pointer"
-              onClick={() => navigate(item.path)}
               transition="all 0.2s ease"
               role="group"
               aria-current={active ? 'page' : undefined}
               _active={{ transform: 'scale(0.95)' }}
+              _hover={{ textDecoration: 'none' }}
             >
-              {/* Icon Container - Blue circle when active */}
-              <Flex
-                align="center"
-                justify="center"
+              {/* FIXED: Consistent Box tags to prevent build error */}
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
                 w="48px"
                 h="48px"
                 borderRadius="full"
@@ -141,9 +136,8 @@ const MobileBottomNav: React.FC = () => {
                   strokeWidth={active ? 2.5 : 2}
                   transition="all 0.2s ease"
                 />
-              </Flex>
-              
-              {/* Label */}
+              </Box>
+
               <Text
                 fontSize="11px"
                 fontWeight={active ? '600' : '500'}
