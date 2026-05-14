@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MapPin, Lock } from 'lucide-react';
 import { useModalKeyboardNavigation } from '../hooks/useModalKeyboardNavigation';
-import LoadingSpinner from './LoadingSpinner'; // Utilizing your upgraded component
+import LoadingSpinner from './LoadingSpinner';
 
 interface LocationPermissionModalProps {
   isOpen: boolean;
@@ -26,7 +26,6 @@ export default function LocationPermissionModal({
     onClose: onSkip,
   });
 
-  // Handle body scroll lock & layout shift prevention
   useEffect(() => {
     if (!isOpen) return;
 
@@ -35,7 +34,7 @@ export default function LocationPermissionModal({
     const prevPaddingRight = document.body.style.paddingRight;
 
     document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = `${scrollbarWidth}px`; // Prevents layout shift
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
 
     return () => {
       document.body.style.overflow = prevOverflow;
@@ -52,12 +51,12 @@ export default function LocationPermissionModal({
       aria-modal="true"
       aria-labelledby="location-modal-title"
       aria-describedby="location-modal-desc"
-      onClick={onSkip} // FIX: Clicking backdrop triggers skip/close
+      onClick={onSkip}
     >
       <div
         ref={modalRef}
         className="w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl animate-scaleIn sm:rounded-3xl max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]"
-        onClick={(e) => e.stopPropagation()} // Prevents clicks inside the modal from closing it
+        onClick={(e) => e.stopPropagation()}
         tabIndex={-1}
       >
         <div className="p-5 sm:p-8 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))]">
@@ -111,8 +110,7 @@ export default function LocationPermissionModal({
             >
               {isDetecting ? (
                 <>
-                  {/* Integration of your reusable spinner! */}
-                  <LoadingSpinner size="sm" color="current" />
+                  <LoadingSpinner size="sm" color="white" />
                   <span>Detecting...</span>
                 </>
               ) : (
