@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import hushhLogo from "../images/Hushhogo.png";
 import { useAuthSession } from "../../auth/AuthSessionProvider";
@@ -22,13 +22,14 @@ const NAV_ITEMS: NavItem[] = [
   { icon: "verified_user", label: "KYC Studio Alpha", path: "/kyc" },
 ];
 
-// Custom Button Component for cleaner code
-const NavButton: React.FC<{
+// Memoized Custom Button Component for performance
+const NavButton = React.memo<{
   item: NavItem;
   isActive: boolean;
   onClick: (path: string) => void;
-}> = ({ item, isActive, onClick }) => (
+}>(({ item, isActive, onClick }) => (
   <button
+    type="button"
     onClick={() => onClick(item.path)}
     aria-current={isActive ? "page" : undefined}
     className={`group flex items-center gap-3 py-3 px-3 border transition-all rounded-xl w-full text-left ${isActive
@@ -36,26 +37,38 @@ const NavButton: React.FC<{
       : "border-gray-100 hover:border-hushh-blue/20 bg-white hover:bg-hushh-blue/5"
       }`}
   >
-    <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${isActive ? "bg-hushh-blue/10 border-hushh-blue/20" : "bg-gray-50 group-hover:bg-hushh-blue/10 border-transparent group-hover:border-hushh-blue/20 border"
-      }`}>
-      <span className={`material-symbols-outlined !text-[1rem] ${isActive ? "text-hushh-blue" : "text-gray-400 group-hover:text-hushh-blue"
-        }`}>
+    <div
+      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${isActive
+        ? "bg-hushh-blue/10 border-hushh-blue/20"
+        : "bg-gray-50 group-hover:bg-hushh-blue/10 border-transparent group-hover:border-hushh-blue/20 border"
+        }`}
+    >
+      <span
+        className={`material-symbols-outlined !text-[1rem] ${isActive ? "text-hushh-blue" : "text-gray-400 group-hover:text-hushh-blue"
+          }`}
+      >
         {item.icon}
       </span>
     </div>
-    <span className={`text-[0.9rem] font-medium tracking-wide transition-colors leading-tight ${isActive ? "text-hushh-blue" : "text-gray-900 group-hover:text-hushh-blue"
-      }`}>
+    <span
+      className={`text-[0.9rem] font-medium tracking-wide transition-colors leading-tight ${isActive ? "text-hushh-blue" : "text-gray-900 group-hover:text-hushh-blue"
+        }`}
+    >
       {item.label}
     </span>
   </button>
-);
+));
 
-const AuthenticatedFooter: React.FC<{
+NavButton.displayName = "NavButton";
+
+// Memoized Authenticated Footer
+const AuthenticatedFooter = React.memo<{
   onNavigate: (path: string) => void;
   onLogout: () => Promise<void>;
-}> = ({ onNavigate, onLogout }) => (
+}>(({ onNavigate, onLogout }) => (
   <div className="space-y-4">
     <button
+      type="button"
       onClick={() => onNavigate("/hushh-user-profile")}
       className="flex items-center gap-5 group w-full text-left"
     >
@@ -68,12 +81,14 @@ const AuthenticatedFooter: React.FC<{
     </button>
     <div className="flex flex-col gap-4 pl-[3.25rem]">
       <button
+        type="button"
         onClick={() => void onLogout().then(() => onNavigate("/login"))}
         className="text-left text-[0.85rem] font-medium text-gray-500 hover:text-red-500 transition-colors tracking-wide"
       >
         Log Out
       </button>
       <button
+        type="button"
         onClick={() => onNavigate("/delete-account")}
         className="text-left text-[0.85rem] font-medium text-gray-400 hover:text-red-500 transition-colors tracking-wide"
       >
@@ -81,7 +96,9 @@ const AuthenticatedFooter: React.FC<{
       </button>
     </div>
   </div>
-);
+));
+
+AuthenticatedFooter.displayName = "AuthenticatedFooter";
 
 const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   isOpen,
@@ -94,17 +111,28 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  useModalKeyboardNavigation({ isOpen, containerRef: drawerRef, initialFocusRef: closeButtonRef, onClose });
+  useModalKeyboardNavigation({
+    isOpen,
+    containerRef: drawerRef,
+    initialFocusRef: closeButtonRef,
+    onClose,
+  });
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
-  const handleNavigate = (path: string) => {
-    onClose();
-    setTimeout(() => navigate(path), 100); // Slight delay for smooth transition
-  };
+  // Memoized navigation handler
+  const handleNavigate = useCallback(
+    (path: string) => {
+      onClose();
+      setTimeout(() => navigate(path), 100); // Slight delay for smooth transition
+    },
+    [navigate, onClose]
+  );
 
   if (!isOpen) return null;
 
@@ -117,6 +145,8 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
         ref={drawerRef}
         className="w-full max-w-3xl max-h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-white/70 bg-white shadow-2xl flex flex-col animate-scaleIn"
         role="dialog"
+        aria-modal="true"
+        aria-label="Navigation Menu"
         onKeyDown={(e) => moveFocusWithin(drawerRef.current, e)}
         onClick={(e) => e.stopPropagation()}
       >
@@ -128,14 +158,20 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
               hushh technologies
             </span>
           </div>
-          <button ref={closeButtonRef} onClick={onClose} aria-label="Close menu" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <button
+            type="button"
+            ref={closeButtonRef}
+            onClick={onClose}
+            aria-label="Close menu"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
             <span className="material-symbols-outlined text-gray-500">close</span>
           </button>
         </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-8">
-          <div className="grid grid-cols-2 gap-3">
+          <nav aria-label="Main Navigation" className="grid grid-cols-2 gap-3">
             {NAV_ITEMS.map((item) => (
               <NavButton
                 key={item.path}
@@ -144,10 +180,11 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
                 onClick={handleNavigate}
               />
             ))}
-          </div>
+          </nav>
 
           {/* Highlight Section */}
           <button
+            type="button"
             onClick={() => handleNavigate("/unlock-coins")}
             className="w-full mt-4 group p-4 rounded-xl bg-gradient-to-r from-hushh-blue/10 to-transparent border border-hushh-blue/20 flex items-center gap-4 hover:bg-hushh-blue/15 transition-all"
           >
@@ -165,10 +202,18 @@ const HushhTechNavDrawer: React.FC<{ isOpen: boolean; onClose: () => void }> = (
             {isAuthenticated ? (
               <AuthenticatedFooter onNavigate={handleNavigate} onLogout={signOut} />
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <NavButton item={{ icon: 'login', label: 'Log In', path: '/login' }} isActive={false} onClick={handleNavigate} />
-                <NavButton item={{ icon: 'person_add', label: 'Sign Up', path: '/signup' }} isActive={false} onClick={handleNavigate} />
-              </div>
+              <nav aria-label="Authentication" className="grid grid-cols-2 gap-3">
+                <NavButton
+                  item={{ icon: "login", label: "Log In", path: "/login" }}
+                  isActive={false}
+                  onClick={handleNavigate}
+                />
+                <NavButton
+                  item={{ icon: "person_add", label: "Sign Up", path: "/signup" }}
+                  isActive={false}
+                  onClick={handleNavigate}
+                />
+              </nav>
             )}
           </div>
         </div>
