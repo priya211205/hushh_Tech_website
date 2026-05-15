@@ -1,71 +1,86 @@
-import React from 'react';
-import { Box, Text, Image, Heading, List, ListItem, Divider, Badge, VStack, OrderedList, UnorderedList } from '@chakra-ui/react';
-import SkillTesting from '../../../components/images/2_Manifesto.jpg'
+import {
+  Box,
+  Text,
+  Image,
+  Heading,
+  Divider,
+  VStack,
+  OrderedList,
+  UnorderedList,
+  ListItem
+} from '@chakra-ui/react';
+// Verify this path matches your latest '../../../' depth discovery
+import SkillTesting from '../../../components/images/2_Manifesto.jpg';
 
-const AISkillsTesting: React.FC = () => {
+const AISkillsTesting = () => {
+  const sectionHeadingSize = "lg";
+  const bodyTextSize = "md";
+
   return (
-    <Box p={0} color="black" borderRadius="md">
-      <Image src={SkillTesting} alt="Funds Update" mb={4} borderRadius="md" />
+    <Box as="article" p={0} color="black">
+      <Image
+        src={SkillTesting}
+        alt="AI Skills Manifesto Visual"
+        mb={6}
+        borderRadius="md"
+        fallbackSrc="https://via.placeholder.com/800x400?text=AI+Skills+Testing"
+      />
 
-      <Heading as="h2" fontSize="2xl" mb={4} color="black">
-        🚀 AI Skills and Testing
+      <Heading as="h2" fontSize="2xl" mb={4}>
+        <span role="img" aria-label="rocket">🚀</span> AI Skills and Testing
       </Heading>
 
-      <Text fontSize="lg" mb={4}>
-        We live in an age of miracles. But a pre-requisite for any company to harness these miracles is that employees should be excited - and proactive - about learning how to use them.
-      </Text>
+      <VStack align="start" spacing={4} mb={6}>
+        <Text fontSize="lg" fontWeight="500">
+          We live in an age of miracles. But a pre-requisite for any company to harness these miracles is that employees should be excited — and proactive — about learning how to use them.
+        </Text>
 
-      <Text mb={4}>
-        To test this, I’d suggest a new 2-part interview question for every candidate, whether CFO or CSR (customer service rep):
-      </Text>
+        <Text fontSize={bodyTextSize}>
+          To test this, I’d suggest a new 2-part interview question for every candidate, whether CFO or CSR (customer service rep):
+        </Text>
 
-      <OrderedList spacing={2} mb={4}>
-        <ListItem>How will you use AI to make your job more effective?</ListItem>
-        <ListItem>What steps have you already taken to learn about AI tools in your field?</ListItem>
-      </OrderedList>
+        <OrderedList spacing={3} pl={5} fontWeight="600">
+          <ListItem>How will you use AI to make your job more effective?</ListItem>
+          <ListItem>What steps have you already taken to learn about AI tools in your field?</ListItem>
+        </OrderedList>
+      </VStack>
 
-      <Text mb={4}>This interview question tests for several things:</Text>
+      <Divider my={6} borderColor="gray.300" />
 
-      <UnorderedList spacing={2} mb={4}>
-        <ListItem>Proactively engaging with new technology rather than waiting to be trained.</ListItem>
-        <ListItem>Practical understanding of AI's capabilities and limitations in their specific role.</ListItem>
-        <ListItem>Viewing AI as a tool for augmentation and productivity rather than just automation.</ListItem>
-        <ListItem>Insight into their learning mindset and adaptability.</ListItem>
-        <ListItem>Ability to think strategically about incorporating new tools into their workflow.</ListItem>
+      <Heading as="h3" fontSize={sectionHeadingSize} mb={3}>
+        Strong Candidate Responses:
+      </Heading>
+      <UnorderedList spacing={2} mb={6} pl={5}>
+        <ListItem>Specific examples of AI tools experimented with and lessons learned.</ListItem>
+        <ListItem>Realistic applications for their role, not generic AI use cases.</ListItem>
+        <ListItem>A balance between enthusiasm and pragmatism.</ListItem>
       </UnorderedList>
 
-      <Divider my={4} borderColor="black" />
-
-      <Heading as="h3" fontSize="lg" color="black" mb={2}>Strong Candidate Responses Might Include:</Heading>
-      <UnorderedList spacing={2} mb={4}>
-        <ListItem>Specific examples of AI tools they've experimented with and lessons learned.</ListItem>
-        <ListItem>Realistic applications for their role, not just generic AI use cases.</ListItem>
-        <ListItem>A balance between enthusiasm and pragmatism about AI's capabilities.</ListItem>
-        <ListItem>Concrete examples of staying updated on AI developments in their field.</ListItem>
+      <Heading as="h3" fontSize={sectionHeadingSize} color="red.600" mb={3}>
+        Weak Responses (Red Flags):
+      </Heading>
+      <UnorderedList spacing={2} mb={6} pl={5}>
+        <ListItem>Vague statements about AI being "the future" without specifics.</ListItem>
+        <ListItem>Only mentioning surface-level tools like ChatGPT.</ListItem>
+        <ListItem>No evidence of self-directed learning.</ListItem>
       </UnorderedList>
 
-      <Heading as="h3" fontSize="lg" color="red.300" mb={2}>Weak Responses Might Be:</Heading>
-      <List spacing={2} mb={4}>
-        <ListItem>Vague statements about AI being "the future" without specific applications.</ListItem>
-        <ListItem>Only mentioning obvious tools like ChatGPT without deeper understanding.</ListItem>
-        <ListItem>Showing resistance or anxiety about AI's role in their work.</ListItem>
-        <ListItem>No evidence of self-directed learning or experimentation.</ListItem>
-        <ListItem>Unrealistic expectations about AI capabilities.</ListItem>
-      </List>
-
-      <Divider my={4} borderColor="black" />
-
-      <Heading as="h3" fontSize="lg" color="black" mb={2}>For Founders and Leaders:</Heading>
-      <Text mb={4}>
-        I’d suggest including this question (or even a session!) as part of every interview loop, to help identify candidates who will help your company succeed in this age of miracles. Candidates who do poorly in this question should not get an offer, even if they excel in other parts of the interview.
-      </Text>
-
-      <Heading as="h3" fontSize="lg" color="black" mb={2}>💼 AI Fitness Reviews for Current Teams:</Heading>
-      <List spacing={2}>
-        <ListItem><strong>Quarterly AI Skill-Review:</strong> "What AI skill did you learn last quarter? How did it impact your work?"</ListItem>
-        <ListItem><strong>Peer-Driven AI Spotlight Sessions:</strong> Employees demo tools they’ve integrated into their workflows.</ListItem>
-        <ListItem><strong>Reward AI Experiments:</strong> Even failed ones!</ListItem>
-      </List>
+      <Box bg="gray.50" p={6} borderRadius="lg" borderLeft="4px solid" borderColor="black">
+        <Heading as="h3" fontSize={sectionHeadingSize} mb={2}>
+          <span role="img" aria-label="briefcase">💼</span> AI Fitness Reviews for Current Teams
+        </Heading>
+        <UnorderedList spacing={3} variant="unstyled">
+          <ListItem>
+            <strong>Quarterly AI Skill-Review:</strong> "What AI skill did you learn last quarter? How did it impact your work?"
+          </ListItem>
+          <ListItem>
+            <strong>Peer-Driven Spotlights:</strong> Employees demo tools they’ve integrated into their workflows.
+          </ListItem>
+          <ListItem>
+            <strong>Reward Experiments:</strong> Celebrate the learning process, even for failed tests.
+          </ListItem>
+        </UnorderedList>
+      </Box>
     </Box>
   );
 };
