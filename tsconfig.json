@@ -11,9 +11,25 @@
     }
   ],
   "compilerOptions": {
+    "noEmit": true,
+    "target": "ES2020",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "types": ["react"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }

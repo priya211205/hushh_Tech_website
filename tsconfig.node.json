@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "emitDeclarationOnly": true,
     "target": "ES2022",
     "lib": [
       "ES2023"
@@ -16,7 +17,10 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "types": ["react"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "vite.config.ts"
