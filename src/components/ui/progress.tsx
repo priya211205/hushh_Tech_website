@@ -1,6 +1,11 @@
 import * as React from 'react';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
-import { cn } from '../../lib/utils';
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
   indicatorClassName?: string;
@@ -14,18 +19,25 @@ const clampProgress = (value?: number | null) => {
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, indicatorClassName = '', ...props }, ref) => {
+>(({ className, value, indicatorClassName, ...props }, ref) => {
   const safeValue = clampProgress(value);
 
   return (
     <ProgressPrimitive.Root
       ref={ref}
+      // Ensure accessibility values match our clamped logic
       value={safeValue}
-      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-slate-100', className)}
+      className={cn(
+        'relative h-2 w-full overflow-hidden rounded-full bg-slate-100',
+        className
+      )}
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className={`h-full w-full flex-1 transition-transform duration-500 ease-out ${indicatorClassName}`}
+        className={cn(
+          'h-full w-full flex-1 bg-black transition-all duration-500 ease-out',
+          indicatorClassName
+        )}
         style={{ transform: `translateX(-${100 - safeValue}%)` }}
       />
     </ProgressPrimitive.Root>
