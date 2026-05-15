@@ -1,28 +1,56 @@
 import React from "react";
 
-const MAIN_CONTENT_SELECTOR = '#main-content, main, [role="main"]';
+// Standardized Hushh blue or high-contrast black for a11y
+const MAIN_CONTENT_SELECTOR = 'main, #main-content, [role="main"]';
 
 export function SkipToContentLink() {
   const handleSkipToContent = (event: React.MouseEvent<HTMLAnchorElement>) => {
     const mainContent = document.querySelector<HTMLElement>(MAIN_CONTENT_SELECTOR);
-    if (!mainContent) return;
+
+    if (!mainContent) {
+      console.warn("SkipToContentLink: Target 'main' content not found.");
+      return;
+    }
 
     event.preventDefault();
 
-    if (!mainContent.hasAttribute("tabindex")) {
+    // Set tabindex only if not already focusable
+    const isAlreadyFocusable = mainContent.getAttribute("tabindex") !== null;
+
+    if (!isAlreadyFocusable) {
       mainContent.setAttribute("tabindex", "-1");
-      mainContent.addEventListener("blur", () => mainContent.removeAttribute("tabindex"), { once: true });
+      // Use a named function to ensure we can clean it up if needed, 
+      // though 'once: true' is generally safe here.
+      mainContent.addEventListener(
+        "blur",
+        () => mainContent.removeAttribute("tabindex"),
+        { once: true }
+      );
     }
 
+    // Modern focus behavior
     mainContent.focus({ preventScroll: true });
-    mainContent.scrollIntoView({ block: "start" });
+
+    // Ensure the scroll accounts for our fixed header/ticker height
+    // We use a slight offset to ensure the title isn't tucked under the header
+    window.scrollTo({
+      top: mainContent.offsetTop - 120, // Adjust based on Navbar + Ticker height
+      behavior: "smooth"
+    });
   };
 
   return (
     <a
       href="#main-content"
       onClick={handleSkipToContent}
-      className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-gray-900 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-hushh-blue"
+      className={
+        "sr-only focus:not-sr-only " +
+        "focus:fixed focus:left-4 focus:top-4 focus:z-[1100] " +
+        "focus:rounded-full focus:bg-black focus:px-6 focus:py-3 " +
+        "focus:text-sm focus:font-bold focus:text-white " +
+        "focus:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/50 " +
+        "transition-all duration-200"
+      }
     >
       Skip to content
     </a>
