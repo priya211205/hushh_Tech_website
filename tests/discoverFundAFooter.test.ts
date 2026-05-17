@@ -67,7 +67,7 @@ vi.mock("../src/components/hushh-tech-back-header/HushhTechBackHeader", () => ({
 }));
 
 vi.mock("../src/components/hushh-tech-footer/HushhTechFooter", () => ({
-  HushhFooterTab: { FUND_A: "fund-a" },
+  HushhFooterTab: { FUND_A: "fund_a" },
   default: ({ activeTab }: { activeTab: string }) => (
     React.createElement("nav", {
       "data-active-tab": activeTab,
@@ -106,7 +106,7 @@ describe("FundA footer shell", () => {
 
     const footer = container.querySelector('[data-testid="fund-a-footer"]');
 
-    expect(footer?.getAttribute("data-active-tab")).toBe("fund-a");
+    expect(footer?.getAttribute("data-active-tab")).toBe("fund_a");
     expect(footer?.parentElement?.className).toContain("lg:hidden");
   });
 });
