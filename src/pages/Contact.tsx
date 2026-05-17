@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import emailjs from "@emailjs/browser";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,6 +12,7 @@ import {
   HStack,
   Grid,
   GridItem,
+  SimpleGrid,
   Input,
   Textarea,
   Select,
@@ -68,11 +69,6 @@ emailjs.init("_TMzDc8Bfy6riSfzq");
 export default function Contact() {
   const [num1, setNum1] = useState<number>(0);
   const [num2, setNum2] = useState<number>(0);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [number, setNumber] = useState("");
-  const [subject, setSubject] = useState(null);
-  const [message, setMessage] = useState("");
 
   const [formData, setFormData] = useState({
     name: '',
@@ -83,8 +79,6 @@ export default function Contact() {
     message: '',
     captcha: ''
   });
-
-  
 
   const [captchaError, setCaptchaError] = useState<string>('');
   const navigate = useNavigate();
@@ -244,66 +238,82 @@ export default function Contact() {
 
             <form ref={form} onSubmit={handleSubmit}>
               <VStack spacing={5} align="stretch">
-                <FormControl isRequired>
-                  <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
-                    Full Name
-                  </FormLabel>
-                  <Input
-                    name="name"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    size="lg"
-                    h="48px"
-                    {...fieldChrome}
-                  />
-                </FormControl>
+                <SimpleGrid
+                  columns={{ base: 1, md: 2 }}
+                  spacing={5}
+                  alignItems="start"
+                  w="full"
+                  data-testid="contact-form-field-row"
+                >
+                  <FormControl isRequired>
+                    <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
+                      Full Name
+                    </FormLabel>
+                    <Input
+                      name="name"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      size="lg"
+                      h="48px"
+                      {...fieldChrome}
+                    />
+                  </FormControl>
 
-                <FormControl>
-                  <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
-                    Company
-                  </FormLabel>
-                  <Input
-                    name="company"
-                    placeholder="Enter your company name (optional)"
-                    value={formData.company}
-                    onChange={handleChange}
-                    size="lg"
-                    h="48px"
-                    {...fieldChrome}
-                  />
-                </FormControl>
+                  <FormControl>
+                    <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
+                      Company
+                    </FormLabel>
+                    <Input
+                      name="company"
+                      placeholder="Enter your company name (optional)"
+                      value={formData.company}
+                      onChange={handleChange}
+                      size="lg"
+                      h="48px"
+                      {...fieldChrome}
+                    />
+                  </FormControl>
+                </SimpleGrid>
 
-                <FormControl isRequired>
-                  <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
-                    Email Address
-                  </FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    size="lg"
-                    h="48px"
-                    {...fieldChrome}
-                  />
-                </FormControl>
+                <SimpleGrid
+                  columns={{ base: 1, md: 2 }}
+                  spacing={5}
+                  alignItems="start"
+                  w="full"
+                  data-testid="contact-form-field-row"
+                >
+                  <FormControl isRequired>
+                    <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
+                      Email Address
+                    </FormLabel>
+                    <Input
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={formData.email}
+                      onChange={handleChange}
+                      size="lg"
+                      h="48px"
+                      {...fieldChrome}
+                    />
+                  </FormControl>
 
-                <FormControl>
-                  <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
-                    Phone Number
-                  </FormLabel>
-                  <Input
-                    name="phone"
-                    placeholder="Enter your phone number (optional)"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    size="lg"
-                    h="48px"
-                    {...fieldChrome}
-                  />
-                </FormControl>
+                  <FormControl>
+                    <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
+                      Phone Number
+                    </FormLabel>
+                    <Input
+                      name="phone"
+                      placeholder="Enter your phone number (optional)"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      size="lg"
+                      h="48px"
+                      {...fieldChrome}
+                    />
+                  </FormControl>
+                </SimpleGrid>
 
                 <FormControl isRequired>
                   <FormLabel fontWeight="500" fontSize="sm" color={gray500} mb={1.5}>
