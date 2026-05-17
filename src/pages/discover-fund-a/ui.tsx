@@ -6,7 +6,7 @@
  *
  * Changes from original: Apple iOS colors, capitalization, hero subheading.
  */
-import React from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDiscoverFundALogic } from "./logic";
 import HushhTechBackHeader from "../../components/hushh-tech-back-header/HushhTechBackHeader";
@@ -17,7 +17,7 @@ import HushhTechFooter from "../../components/hushh-tech-footer/HushhTechFooter"
 import { HushhFooterTab } from "../../components/hushh-tech-footer/types";
 
 /* ── settings-style row (same as profile page) ── */
-const FieldRow = ({
+const FieldRow = React.memo(({
   label,
   children,
 }: {
@@ -28,17 +28,19 @@ const FieldRow = ({
     <span className="text-sm text-gray-500 font-light">{label}</span>
     <div className="flex items-center gap-2 text-right">{children}</div>
   </div>
-);
+));
+FieldRow.displayName = "FieldRow";
 
 /* ── section label (same as profile page) ── */
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+const SectionLabel = React.memo(({ children }: { children: React.ReactNode }) => (
   <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-medium mt-10 mb-2">
     {children}
   </p>
-);
+));
+SectionLabel.displayName = "SectionLabel";
 
 /* ── card with icon (same as step-2 cards) ── */
-const FeatureCard = ({
+const FeatureCard = React.memo(({
   icon,
   title,
   description,
@@ -68,10 +70,11 @@ const FeatureCard = ({
       </p>
     </div>
   </div>
-);
+));
+FeatureCard.displayName = "FeatureCard";
 
 /* ── desktop highlight tile (same spirit as home advantage) ── */
-const FeatureHighlightTile = ({
+const FeatureHighlightTile = React.memo(({
   icon,
   title,
   description,
@@ -101,9 +104,10 @@ const FeatureHighlightTile = ({
       </p>
     </div>
   </div>
-);
+));
+FeatureHighlightTile.displayName = "FeatureHighlightTile";
 
-/* ── icon + color maps for cards ── */
+/* ── static icon maps ── */
 const PHILOSOPHY_ICONS: Record<string, string> = {
   "Options Intelligence": "psychology",
   "AI-Enhanced Research": "neurology",
@@ -154,9 +158,11 @@ const RISK_COLORS: Record<string, string> = {
   "Liquidity Management": "text-hushh-blue",
 };
 
-const FundA = () => {
+const FundA: React.FC = () => {
   const navigate = useNavigate();
-  const [isAlphaBreakdownOpen, setIsAlphaBreakdownOpen] = React.useState(false);
+  const [isAlphaBreakdownOpen, setIsAlphaBreakdownOpen] = useState<boolean>(false);
+
+  // Cleaned edgeSectionTitle out from target destructuring mapping array parameters
   const {
     heroTitle,
     heroSubtitle,
@@ -167,7 +173,6 @@ const FundA = () => {
     targetIRRDisclaimer,
     philosophySectionTitle,
     philosophyCards,
-    edgeSectionTitle,
     sellTheWallHref,
     edgeCards,
     assetFocusSectionTitle,
@@ -187,228 +192,122 @@ const FundA = () => {
     joinButtonLabel,
     handleCompleteProfile,
   } = useDiscoverFundALogic();
-  const alphaBreakdownRows = alphaStackRows.filter((row) => !row.isTotalRow);
-  const targetNetIrrRow = alphaStackRows.find((row) => row.isTotalRow);
 
-  const getProgressWidth = (value: string): number => {
-    const rangeMatch = value.match(/(\d+)\s*-\s*(\d+)/);
-    if (rangeMatch) {
-      const min = Number(rangeMatch[1]);
-      const max = Number(rangeMatch[2]);
-      const midpoint = (min + max) / 2;
-      return Math.min((midpoint / 23) * 100, 100);
+  const alphaBreakdownRows = useMemo(() => alphaStackRows.filter((row) => !row.isTotalRow), [alphaStackRows]);
+  const targetNetIrrRow = useMemo(() => alphaStackRows.find((row) => row.isTotalRow), [alphaStackRows]);
+
+  const getProgressWidth = useCallback((value: string | undefined | null): number => {
+    if (!value) return 0;
+    try {
+      const rangeMatch = value.match(/(\d+)\s*-\s*(\d+)/);
+      if (rangeMatch && rangeMatch[1] && rangeMatch[2]) {
+        const min = Number(rangeMatch[1]);
+        const max = Number(rangeMatch[2]);
+        return Math.min((((min + max) / 2) / 23) * 100, 100);
+      }
+      const singleMatch = value.match(/(\d+(\.\d+)?)/);
+      if (singleMatch && singleMatch[1]) {
+        return Math.min((Number(singleMatch[1]) / 23) * 100, 100);
+      }
+    } catch (err) {
+      console.warn("[FundA] Problem parsing graph values:", err);
     }
-
-    const singleMatch = value.match(/(\d+(\.\d+)?)/);
-    if (!singleMatch) {
-      return 0;
-    }
-
-    const numericValue = Number(singleMatch[1]);
-    return Math.min((numericValue / 23) * 100, 100);
-  };
+    return 0;
+  }, []);
 
   return (
     <div className="bg-white text-gray-900 min-h-screen antialiased flex flex-col selection:bg-hushh-blue selection:text-white">
-      {/* ═══ Header ═══ */}
-      <HushhTechBackHeader
-        onBackClick={() => navigate("/")}
-        rightType="hamburger"
-      />
+      <HushhTechBackHeader onBackClick={() => navigate("/")} rightType="hamburger" />
 
-      {/* ═══ Main ═══ */}
       <main className="px-6 flex-grow max-w-md mx-auto w-full pb-32 lg:max-w-7xl lg:px-10 xl:px-16">
         <section className="pt-6 pb-8 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
-          {/* ── Hero ── */}
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-hushh-blue/20 rounded-full mb-6">
               <span className="w-1.5 h-1.5 bg-hushh-blue rounded-full" />
-              <span className="text-[10px] tracking-[0.15em] uppercase font-medium text-hushh-blue">
-                Flagship Fund
-              </span>
+              <span className="text-[10px] tracking-[0.15em] uppercase font-medium text-hushh-blue">Flagship Fund</span>
             </div>
-
-            <h1
-              className="text-[2.75rem] leading-[1.1] font-normal text-black tracking-tight lg:text-[3.25rem]"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
+            <h1 className="text-[2.75rem] leading-[1.1] font-normal text-black tracking-tight lg:text-[3.25rem]" style={{ fontFamily: "'Playfair Display', serif" }}>
               {heroTitle} <br />
               <span className="text-gray-400 italic font-light">{heroSubtitle}</span>
             </h1>
-
-            <p className="text-[13px] text-gray-400 font-light mt-4 leading-relaxed max-w-xs lg:max-w-md">
-              {heroDescription}
-            </p>
+            <p className="text-[13px] text-gray-400 font-light mt-4 leading-relaxed max-w-xs lg:max-w-md">{heroDescription}</p>
           </div>
 
-          {/* ── Target IRR (premium black card) ── */}
           <div className="mt-8 lg:mt-0">
             <div className="group bg-ios-dark rounded-2xl p-6 text-center relative overflow-hidden transition-all duration-700 hover:-rotate-[5deg]">
               <div className="absolute inset-0 bg-ios-gray-bg/90 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-100" />
               <div className="absolute -top-8 -right-8 w-32 h-32 bg-hushh-blue/15 rounded-full blur-2xl" />
               <div className="relative z-10">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 group-hover:text-gray-600 mb-3 font-medium transition-colors duration-700">
-                  {targetIRRLabel}
-                </p>
-                <p
-                  className="text-[48px] leading-none font-medium text-ios-green mb-2"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  {targetIRRValue}
-                </p>
-                <p className="text-[13px] text-gray-400 group-hover:text-gray-600 mb-4 transition-colors duration-700">
-                  {targetIRRPeriod}
-                </p>
-                <p className="text-[9px] text-gray-600 italic max-w-[220px] mx-auto leading-relaxed">
-                  {targetIRRDisclaimer}
-                </p>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 group-hover:text-gray-600 mb-3 font-medium transition-colors duration-700">{targetIRRLabel}</p>
+                <p className="text-[48px] leading-none font-medium text-ios-green mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{targetIRRValue}</p>
+                <p className="text-[13px] text-gray-400 group-hover:text-gray-600 mb-4 transition-colors duration-700">{targetIRRPeriod}</p>
+                <p className="text-[9px] text-gray-600 italic max-w-[220px] mx-auto leading-relaxed">{targetIRRDisclaimer}</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── Investment Philosophy ── */}
         <SectionLabel>{philosophySectionTitle}</SectionLabel>
         <div className="space-y-3 mb-2 lg:hidden">
           {philosophyCards.map((card) => (
-            <FeatureCard
-              key={card.title}
-              icon={PHILOSOPHY_ICONS[card.title] || "lightbulb"}
-              iconColor={PHILOSOPHY_COLORS[card.title] || "text-hushh-blue"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureCard key={card.title} icon={PHILOSOPHY_ICONS[card.title] || "lightbulb"} iconColor={PHILOSOPHY_COLORS[card.title] || "text-hushh-blue"} title={card.title} description={card.description} />
           ))}
         </div>
         <div className="hidden lg:grid lg:grid-cols-3 gap-4 mb-2">
           {philosophyCards.map((card) => (
-            <FeatureHighlightTile
-              key={card.title}
-              icon={PHILOSOPHY_ICONS[card.title] || "lightbulb"}
-              iconColor={PHILOSOPHY_COLORS[card.title] || "text-hushh-blue"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureHighlightTile key={card.title} icon={PHILOSOPHY_ICONS[card.title] || "lightbulb"} iconColor={PHILOSOPHY_COLORS[card.title] || "text-hushh-blue"} title={card.title} description={card.description} />
           ))}
         </div>
 
-        {/* ── Sell the Wall Framework ── */}
-        <SectionLabel>
-          Our Edge —{" "}
-          <a
-            href={sellTheWallHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-hushh-blue underline decoration-hushh-blue/30 hover:decoration-hushh-blue transition-colors"
-          >
-            Sell the Wall
-          </a>{" "}
-          Framework
-        </SectionLabel>
+        <SectionLabel>Our Edge — <a href={sellTheWallHref} target="_blank" rel="noopener noreferrer" className="text-hushh-blue underline decoration-hushh-blue/30 hover:decoration-hushh-blue transition-colors">Sell the Wall</a> Framework</SectionLabel>
         <div className="space-y-3 mb-2 lg:hidden">
           {edgeCards.map((card) => (
-            <FeatureCard
-              key={card.title}
-              icon={EDGE_ICONS[card.title] || "auto_awesome"}
-              iconColor={EDGE_COLORS[card.title] || "text-hushh-blue"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureCard key={card.title} icon={EDGE_ICONS[card.title] || "auto_awesome"} iconColor={EDGE_COLORS[card.title] || "text-hushh-blue"} title={card.title} description={card.description} />
           ))}
         </div>
         <div className="hidden lg:grid lg:grid-cols-4 gap-4 mb-2">
           {edgeCards.map((card) => (
-            <FeatureHighlightTile
-              key={card.title}
-              icon={EDGE_ICONS[card.title] || "auto_awesome"}
-              iconColor={EDGE_COLORS[card.title] || "text-hushh-blue"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureHighlightTile key={card.title} icon={EDGE_ICONS[card.title] || "auto_awesome"} iconColor={EDGE_COLORS[card.title] || "text-hushh-blue"} title={card.title} description={card.description} />
           ))}
         </div>
 
-        {/* ── Asset Focus ── */}
         <SectionLabel>{assetFocusSectionTitle}</SectionLabel>
-        <p className="text-[11px] text-gray-400 font-light leading-relaxed mb-4">
-          {assetFocusDescription}
-        </p>
+        <p className="text-[11px] text-gray-400 font-light leading-relaxed mb-4">{assetFocusDescription}</p>
         <div className="space-y-3 mb-2 lg:hidden">
           {assetPillars.map((pillar) => (
-            <FeatureCard
-              key={pillar.title}
-              icon={ASSET_ICONS[pillar.title] || "category"}
-              iconColor={ASSET_COLORS[pillar.title] || "text-hushh-blue"}
-              title={pillar.title}
-              description={pillar.description}
-            />
+            <FeatureCard key={pillar.title} icon={ASSET_ICONS[pillar.title] || "category"} iconColor={ASSET_COLORS[pillar.title] || "text-hushh-blue"} title={pillar.title} description={pillar.description} />
           ))}
         </div>
         <div className="hidden lg:grid lg:grid-cols-2 xl:grid-cols-3 gap-4 mb-2">
           {assetPillars.map((pillar) => (
-            <FeatureHighlightTile
-              key={pillar.title}
-              icon={ASSET_ICONS[pillar.title] || "category"}
-              iconColor={ASSET_COLORS[pillar.title] || "text-hushh-blue"}
-              title={pillar.title}
-              description={pillar.description}
-            />
+            <FeatureHighlightTile key={pillar.title} icon={ASSET_ICONS[pillar.title] || "category"} iconColor={ASSET_COLORS[pillar.title] || "text-hushh-blue"} title={pillar.title} description={pillar.description} />
           ))}
         </div>
 
-        {/* ── Targeted Alpha Stack (FieldRow style) ── */}
         <SectionLabel>{alphaStackSectionTitle}</SectionLabel>
-        <p className="text-[10px] text-gray-400 italic mb-1">
-          {alphaStackSubtitle}
-        </p>
+        <p className="text-[10px] text-gray-400 italic mb-1">{alphaStackSubtitle}</p>
         <div className="mb-2 lg:hidden">
           {alphaStackRows.map((row) =>
             row.isTotalRow ? (
-              <div
-                key={row.label}
-                className="group relative overflow-hidden flex items-center justify-between bg-ios-dark text-white rounded-2xl px-6 py-4 mt-3 transition-colors duration-700"
-              >
+              <div key={row.label} className="group relative overflow-hidden flex items-center justify-between bg-ios-dark text-white rounded-2xl px-6 py-4 mt-3 transition-colors duration-700">
                 <div className="absolute inset-0 bg-ios-gray-bg/90 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-100" />
-                <span className="relative z-10 text-sm font-semibold text-white group-hover:text-gray-700 transition-colors duration-700">
-                  {row.label}
-                </span>
-                <span
-                  className="relative z-10 text-xl font-medium text-ios-green"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  {row.value}
-                </span>
+                <span className="relative z-10 text-sm font-semibold text-white group-hover:text-gray-700 transition-colors duration-700">{row.label}</span>
+                <span className="relative z-10 text-xl font-medium text-ios-green" style={{ fontFamily: "'Playfair Display', serif" }}>{row.value}</span>
               </div>
             ) : (
-              <FieldRow key={row.label} label={row.label}>
-                <span className="text-sm font-semibold text-black">
-                  {row.value}
-                </span>
-              </FieldRow>
+              <FieldRow key={row.label} label={row.label}><span className="text-sm font-semibold text-black">{row.value}</span></FieldRow>
             )
           )}
         </div>
+
         <div className="hidden lg:block mb-2">
           {targetNetIrrRow && (
-            <button
-              type="button"
-              onClick={() => setIsAlphaBreakdownOpen((prev) => !prev)}
-              className="group relative overflow-hidden w-full text-left flex items-center justify-between bg-ios-dark text-white rounded-2xl px-6 py-4 transition-colors duration-700"
-            >
+            <button type="button" onClick={() => setIsAlphaBreakdownOpen((prev) => !prev)} className="group relative overflow-hidden w-full text-left flex items-center justify-between bg-ios-dark text-white rounded-2xl px-6 py-4 transition-colors duration-700">
               <div className="absolute inset-0 bg-ios-gray-bg/90 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-100" />
-              <span className="relative z-10 text-sm font-semibold text-white group-hover:text-gray-700 transition-colors duration-700">
-                {targetNetIrrRow.label}
-              </span>
+              <span className="relative z-10 text-sm font-semibold text-white group-hover:text-gray-700 transition-colors duration-700">{targetNetIrrRow.label}</span>
               <div className="relative z-10 flex items-center gap-3">
-                <span
-                  className="text-xl font-medium text-ios-green"
-                  style={{ fontFamily: "'Playfair Display', serif" }}
-                >
-                  {targetNetIrrRow.value}
-                </span>
-                <span className="material-symbols-outlined !text-[1.15rem] text-hushh-blue">
-                  {isAlphaBreakdownOpen ? "expand_less" : "expand_more"}
-                </span>
+                <span className="text-xl font-medium text-ios-green" style={{ fontFamily: "'Playfair Display', serif" }}>{targetNetIrrRow.value}</span>
+                <span className="material-symbols-outlined !text-[1.15rem] text-hushh-blue">{isAlphaBreakdownOpen ? "expand_less" : "expand_more"}</span>
               </div>
             </button>
           )}
@@ -416,28 +315,16 @@ const FundA = () => {
           {isAlphaBreakdownOpen && (
             <div className="grid grid-cols-4 gap-4 mt-4">
               {alphaBreakdownRows.map((row) => (
-                <div
-                  key={row.label}
-                  className="group border border-gray-200 rounded-2xl p-4 bg-gradient-to-b from-white to-gray-50/60 hover:border-hushh-blue/25 transition-all"
-                >
-                  <p className="text-[11px] font-medium text-black leading-snug mb-3 min-h-[34px]">
-                    {row.label}
-                  </p>
+                <div key={row.label} className="group border border-gray-200 rounded-2xl p-4 bg-gradient-to-b from-white to-gray-50/60 hover:border-hushh-blue/25 transition-all">
+                  <p className="text-[11px] font-medium text-black leading-snug mb-3 min-h-[34px]">{row.label}</p>
                   <div className="w-full h-2.5 rounded-full bg-gray-200/80 overflow-hidden mb-2 shadow-inner">
-                    <div
-                      className="relative h-full rounded-full bg-gradient-to-r from-hushh-blue to-hushh-blue/70 transition-all duration-700"
-                      style={{ width: `${getProgressWidth(row.value)}%` }}
-                    >
+                    <div className="relative h-full rounded-full bg-gradient-to-r from-hushh-blue to-hushh-blue/70 transition-all duration-700" style={{ width: `${getProgressWidth(row.value)}%` }}>
                       <span className="absolute inset-0 opacity-60 bg-[linear-gradient(110deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.55)_45%,rgba(255,255,255,0)_70%)] animate-[pulse_2.4s_ease-in-out_infinite]" />
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] uppercase tracking-[0.16em] text-gray-400">
-                      Annual Range
-                    </p>
-                    <p className="text-[12px] font-semibold text-hushh-blue group-hover:text-ios-dark transition-colors">
-                      {row.value}
-                    </p>
+                    <p className="text-[10px] uppercase tracking-[0.16em] text-gray-400">Annual Range</p>
+                    <p className="text-[12px] font-semibold text-hushh-blue group-hover:text-ios-dark transition-colors">{row.value}</p>
                   </div>
                 </div>
               ))}
@@ -445,167 +332,91 @@ const FundA = () => {
           )}
         </div>
 
-        {/* ── Risk Management ── */}
         <SectionLabel>{riskSectionTitle}</SectionLabel>
         <div className="space-y-3 mb-2 lg:hidden">
           {riskCards.map((card) => (
-            <FeatureCard
-              key={card.title}
-              icon={RISK_ICONS[card.title] || "security"}
-              iconColor={RISK_COLORS[card.title] || "text-ios-green"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureCard key={card.title} icon={RISK_ICONS[card.title] || "security"} iconColor={RISK_COLORS[card.title] || "text-ios-green"} title={card.title} description={card.description} />
           ))}
         </div>
         <div className="hidden lg:grid lg:grid-cols-2 gap-4 mb-2">
           {riskCards.map((card) => (
-            <FeatureHighlightTile
-              key={card.title}
-              icon={RISK_ICONS[card.title] || "security"}
-              iconColor={RISK_COLORS[card.title] || "text-ios-green"}
-              title={card.title}
-              description={card.description}
-            />
+            <FeatureHighlightTile key={card.title} icon={RISK_ICONS[card.title] || "security"} iconColor={RISK_COLORS[card.title] || "text-ios-green"} title={card.title} description={card.description} />
           ))}
         </div>
 
-        {/* ── Key Terms (FieldRow style) ── */}
         <SectionLabel>{keyTermsSectionTitle}</SectionLabel>
-        <p className="text-[10px] text-gray-400 italic mb-1">
-          {keyTermsSubtitle}
-        </p>
-
-        {/* First terms as FieldRows */}
+        <p className="text-[10px] text-gray-400 italic mb-1">{keyTermsSubtitle}</p>
         <div className="mb-4">
           {keyTerms.slice(0, 2).map((term) => (
             <FieldRow key={term.title} label={term.title}>
-              <span className="text-[12px] font-medium text-black max-w-[180px] text-right leading-snug">
-                {term.content}
-              </span>
+              <span className="text-[12px] font-medium text-black max-w-[180px] text-right leading-snug">{term.content}</span>
             </FieldRow>
           ))}
         </div>
 
-        {/* Share Classes (compact cards) */}
         <SectionLabel>Share Classes</SectionLabel>
         <div className="space-y-3 mb-4 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
           {shareClasses.map((sc) => (
-            <div
-              key={sc.shareClass}
-              data-testid="share-class-pricing-card"
-              className="border border-gray-200 rounded-2xl p-5 hover:border-gray-300 hover:bg-gray-50/40 transition-all"
-            >
-              <div
-                data-testid="share-class-pricing-header"
-                className="flex flex-col items-start gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:mb-3"
-              >
+            <div key={sc.shareClass} data-testid="share-class-pricing-card" className="border border-gray-200 rounded-2xl p-5 hover:border-gray-300 hover:bg-gray-50/40 transition-all">
+              <div data-testid="share-class-pricing-header" className="flex flex-col items-start gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-ios-dark flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white !text-[0.9rem]">
-                      account_balance_wallet
-                    </span>
+                    <span className="material-symbols-outlined text-white !text-[0.9rem]">account_balance_wallet</span>
                   </div>
-                  <span className="text-[13px] font-semibold text-black">
-                    {sc.shareClass}
-                  </span>
+                  <span className="text-[13px] font-semibold text-black">{sc.shareClass}</span>
                 </div>
                 <span className="inline-flex max-w-full text-[11px] font-medium text-hushh-blue bg-hushh-blue/10 px-2.5 py-1 rounded-full">
-                  Min {sc.minInvestment}
+                  {"Min " + sc.minInvestment}
                 </span>
               </div>
-              <div
-                data-testid="share-class-pricing-metrics"
-                className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-              >
+              <div data-testid="share-class-pricing-metrics" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <div className="text-center rounded-xl border border-gray-200 bg-white px-2 py-2 transition-all hover:border-hushh-blue/40 hover:bg-hushh-blue/5">
-                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">
-                    Mgmt
-                  </p>
-                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-hushh-blue">
-                    {sc.managementFee}
-                  </p>
+                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">Mgmt</p>
+                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-hushh-blue">{sc.managementFee}</p>
                 </div>
                 <div className="text-center rounded-xl border border-gray-200 bg-white px-2 py-2 transition-all hover:border-ios-green/40 hover:bg-ios-green/5">
-                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">
-                    Perf
-                  </p>
-                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-ios-green">
-                    {sc.performanceFee}
-                  </p>
+                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">Perf</p>
+                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-ios-green">{sc.performanceFee}</p>
                 </div>
                 <div className="text-center rounded-xl border border-gray-200 bg-white px-2 py-2 transition-all hover:border-ios-yellow/50 hover:bg-ios-yellow/10">
-                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">
-                    Hurdle
-                  </p>
-                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-ios-yellow">
-                    {sc.hurdleRate}
-                  </p>
+                  <p className="text-[9px] uppercase tracking-widest text-gray-400 mb-0.5">Hurdle</p>
+                  <p className="text-[12px] font-semibold text-black transition-colors hover:text-ios-yellow">{sc.hurdleRate}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Remaining terms */}
         <div className="mb-6">
           {keyTerms.slice(2).map((term) => (
             <FieldRow key={term.title} label={term.title}>
-              <span className="text-[12px] font-medium text-black max-w-[180px] text-right leading-snug">
-                {term.content}
-              </span>
+              <span className="text-[12px] font-medium text-black max-w-[180px] text-right leading-snug">{term.content}</span>
             </FieldRow>
           ))}
         </div>
 
-        {/* ── Join / CTA ── */}
         <section className="border-t border-gray-200 pt-8 mb-8">
-          <h2
-            className="text-[22px] font-medium text-black tracking-tight mb-2"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            {joinSectionTitle}
-          </h2>
-          <p className="text-[13px] text-gray-400 font-light leading-relaxed mb-8 max-w-xs">
-            {joinSectionDescription}
-          </p>
-
+          <h2 className="text-[22px] font-medium text-black tracking-tight mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>{joinSectionTitle}</h2>
+          <p className="text-[13px] text-gray-400 font-light leading-relaxed mb-8 max-w-xs">{joinSectionDescription}</p>
           <div className="space-y-3 lg:space-y-0 lg:flex lg:items-center lg:gap-3">
             <div className="lg:w-1/2">
-              <HushhTechCta
-                variant={HushhTechCtaVariant.BLACK}
-                onClick={handleCompleteProfile}
-              >
+              <HushhTechCta variant={HushhTechCtaVariant.BLACK} onClick={handleCompleteProfile}>
                 {joinButtonLabel}
-                <span className="material-symbols-outlined !text-[1.1rem]">
-                  arrow_forward
-                </span>
+                <span className="material-symbols-outlined !text-[1.1rem]">arrow_forward</span>
               </HushhTechCta>
             </div>
             <div className="lg:w-1/2">
-              <HushhTechCta
-                variant={HushhTechCtaVariant.WHITE}
-                onClick={() => navigate("/")}
-              >
-                Back to Home
-              </HushhTechCta>
+              <HushhTechCta variant={HushhTechCtaVariant.WHITE} onClick={() => navigate("/")}>Back to Home</HushhTechCta>
             </div>
           </div>
         </section>
 
-        {/* ── Disclaimer ── */}
-        <p
-          className="text-[9px] text-gray-400 text-center leading-relaxed italic max-w-xs mx-auto mb-4"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          Investing involves risk, including possible loss of principal. Past
-          performance does not guarantee future results. Hushh Technologies is an
-          SEC registered investment advisor.
+        <p className="text-[9px] text-gray-400 text-center leading-relaxed italic max-w-xs mx-auto mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
+          Investing involves risk, including possible loss of principal. Past performance does not guarantee future results. Hushh Technologies is an SEC registered investment advisor.
         </p>
       </main>
 
-      {/* ═══ Footer Nav ═══ */}
-      <div className="lg:hidden">
+      <div className="lg:hidden" data-active-tab="fund-a" data-testid="fund-a-footer">
         <HushhTechFooter activeTab={HushhFooterTab.FUND_A} />
       </div>
     </div>
